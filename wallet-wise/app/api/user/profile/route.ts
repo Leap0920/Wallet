@@ -65,3 +65,25 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 })
     }
 }
+
+export async function GET(request: NextRequest) {
+    try {
+        const session = await auth()
+
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { id: true, name: true, email: true, avatarUrl: true, backgroundUrl: true }
+        })
+
+        if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
+        return NextResponse.json(user)
+    } catch (error: any) {
+        console.error('Profile GET error:', error?.message || error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+}

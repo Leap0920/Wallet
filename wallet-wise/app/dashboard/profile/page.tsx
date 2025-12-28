@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import { useEffect } from "react"
 import { User, Mail, Calendar, Edit3, Save, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,6 +28,27 @@ export default function ProfilePage() {
     const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null)
     const avatarInputRef = useRef<HTMLInputElement | null>(null)
     const backgroundInputRef = useRef<HTMLInputElement | null>(null)
+    const router = useRouter()
+
+    // Fetch latest profile data (avatar/background) from the server so saved images persist
+    useEffect(() => {
+        let mounted = true
+        const load = async () => {
+            try {
+                const res = await fetch('/api/user/profile')
+                if (!res.ok) return
+                const data = await res.json()
+                if (!mounted) return
+                if (data?.avatarUrl) setAvatarPreview(data.avatarUrl)
+                if (data?.backgroundUrl) setBackgroundPreview(data.backgroundUrl)
+                if (data?.name) setFormData((s) => ({ ...s, name: data.name }))
+            } catch (e) {
+                console.warn('Could not load profile data', e)
+            }
+        }
+        load()
+        return () => { mounted = false }
+    }, [])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -82,12 +105,49 @@ export default function ProfilePage() {
                 }
             })
 
-            const avatarData = avatarFile ? await compressImage(avatarFile, 512, 512, 0.8) : undefined
-            const backgroundData = backgroundFile ? await compressImage(backgroundFile, 1200, 400, 0.8) : undefined
-
+            // Preferred flow: upload files to S3 (or S3-compatible) via presigned URLs, store only public URLs in DB
             const payload: any = { ...formData }
-            if (avatarData) payload.avatarUrl = avatarData
-            if (backgroundData) payload.backgroundUrl = backgroundData
+
+            const uploadToPresign = async (file: File, type: 'avatar' | 'background') => {
+                try {
+                    // ask server for a presigned URL
+                    const res = await fetch('/api/user/profile/presign', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: file.name, contentType: file.type, keyPrefix: `users/${session?.user?.id}/${type}` })
+                    })
+                    if (!res.ok) return null
+                    const data = await res.json()
+                    if (!data?.uploadUrl || !data?.publicUrl) return null
+
+                    // upload the file directly to the storage using the presigned URL
+                    const put = await fetch(data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file })
+                    if (!put.ok) return null
+                    return data.publicUrl
+                } catch (e) {
+                    console.warn('Presign upload failed, will fallback to inline upload', e)
+                    return null
+                }
+            }
+
+            // Try presigned upload first
+            if (avatarFile) {
+                const publicUrl = await uploadToPresign(avatarFile, 'avatar')
+                if (publicUrl) payload.avatarUrl = publicUrl
+                else {
+                    const avatarData = await compressImage(avatarFile, 512, 512, 0.8)
+                    if (avatarData) payload.avatarUrl = avatarData
+                }
+            }
+
+            if (backgroundFile) {
+                const publicUrl = await uploadToPresign(backgroundFile, 'background')
+                if (publicUrl) payload.backgroundUrl = publicUrl
+                else {
+                    const backgroundData = await compressImage(backgroundFile, 1200, 400, 0.8)
+                    if (backgroundData) payload.backgroundUrl = backgroundData
+                }
+            }
 
             const response = await fetch("/api/user/profile", {
                 method: "PATCH",
@@ -96,9 +156,19 @@ export default function ProfilePage() {
             })
 
             if (response.ok) {
-                await update({ name: formData.name, image: avatarPreview || session.user.image })
+                // try to read returned updated user and update UI
+                const updated = await response.json().catch(() => null)
+                if (updated) {
+                    if (typeof updated.avatarUrl === "string") setAvatarPreview(updated.avatarUrl)
+                    if (typeof updated.backgroundUrl === "string") setBackgroundPreview(updated.backgroundUrl)
+                    if (typeof updated.name === "string") setFormData((s) => ({ ...s, name: updated.name }))
+                    // also update next-auth session display if possible
+                    try { await update({ name: updated.name ?? formData.name, image: updated.avatarUrl ?? avatarPreview ?? session.user.image }) } catch (e) { /* ignore */ }
+                }
                 setIsEditing(false)
                 toast.success("Profile updated successfully!")
+                // ensure server components / cached data are refreshed
+                try { router.refresh() } catch (e) { /* ignore */ }
             } else {
                 // attempt to read server error message
                 let msg = 'Failed to update profile'
