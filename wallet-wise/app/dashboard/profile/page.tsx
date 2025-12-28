@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { User, Mail, Calendar, Edit3, Save, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,25 +20,100 @@ export default function ProfilePage() {
         email: session?.user?.email || "",
     })
 
+    const [avatarFile, setAvatarFile] = useState<File | null>(null)
+    const [backgroundFile, setBackgroundFile] = useState<File | null>(null)
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(session?.user?.image || null)
+    const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null)
+    const avatarInputRef = useRef<HTMLInputElement | null>(null)
+    const backgroundInputRef = useRef<HTMLInputElement | null>(null)
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
+    }
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "avatar" | "background") => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const url = URL.createObjectURL(file)
+
+        if (type === "avatar") {
+            setAvatarFile(file)
+            setAvatarPreview(url)
+        } else {
+            setBackgroundFile(file)
+            setBackgroundPreview(url)
+        }
     }
 
     const handleSave = async () => {
         setIsLoading(true)
         try {
+            // compress/resize images client-side before converting to data URLs
+            const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.8) => new Promise<string | null>(async (resolve, reject) => {
+                if (!file) return resolve(null)
+                try {
+                    const img = await createImageBitmap(file)
+                    let { width, height } = img
+                    const aspect = width / height
+                    if (width > maxWidth) {
+                        width = maxWidth
+                        height = Math.round(maxWidth / aspect)
+                    }
+                    if (height > maxHeight) {
+                        height = maxHeight
+                        width = Math.round(maxHeight * aspect)
+                    }
+
+                    const canvas = document.createElement('canvas')
+                    canvas.width = width
+                    canvas.height = height
+                    const ctx = canvas.getContext('2d')
+                    if (!ctx) return resolve(null)
+                    ctx.drawImage(img, 0, 0, width, height)
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality)
+                    resolve(dataUrl)
+                } catch (err) {
+                    // fallback to basic FileReader if createImageBitmap fails
+                    const reader = new FileReader()
+                    reader.onload = () => resolve(reader.result as string)
+                    reader.onerror = reject
+                    reader.readAsDataURL(file)
+                }
+            })
+
+            const avatarData = avatarFile ? await compressImage(avatarFile, 512, 512, 0.8) : undefined
+            const backgroundData = backgroundFile ? await compressImage(backgroundFile, 1200, 400, 0.8) : undefined
+
+            const payload: any = { ...formData }
+            if (avatarData) payload.avatarUrl = avatarData
+            if (backgroundData) payload.backgroundUrl = backgroundData
+
             const response = await fetch("/api/user/profile", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             })
 
             if (response.ok) {
-                await update({ name: formData.name })
+                await update({ name: formData.name, image: avatarPreview || session.user.image })
                 setIsEditing(false)
                 toast.success("Profile updated successfully!")
             } else {
-                throw new Error("Failed to update profile")
+                // attempt to read server error message
+                let msg = 'Failed to update profile'
+                try {
+                    const json = await response.json()
+                    if (json?.error) msg = json.error
+                    else if (json?.message) msg = json.message
+                } catch (e) {
+                    try {
+                        const text = await response.text()
+                        if (text) msg = text
+                    } catch (_) { }
+                }
+                toast.error(msg)
+                console.error('Profile update failed', response.status, await response.text())
             }
         } catch (error) {
             toast.error("Failed to update profile. Please try again.")
@@ -64,7 +139,33 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6">
+        <div className="max-w-3xl mx-auto space-y-6">
+            {/* Background banner */}
+            <div className="rounded-md overflow-hidden">
+                <div
+                    className="w-full h-40 bg-neutral-800 flex items-end p-4"
+                    style={{ backgroundImage: backgroundPreview ? `url(${backgroundPreview})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                >
+                    <div className="flex items-center space-x-4 bg-black/40 p-2 rounded">
+                        <div className="relative">
+                            {avatarPreview ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={avatarPreview} alt="avatar" className="w-20 h-20 rounded-full object-cover border-2 border-neutral-700" />
+                            ) : (
+                                <Avatar className="w-20 h-20">
+                                    <AvatarFallback className="bg-neutral-700 text-white text-2xl">
+                                        {session.user.name?.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            )}
+                        </div>
+                        <div className="text-white">
+                            <div className="text-lg font-semibold">{session.user.name}</div>
+                            <div className="text-sm text-neutral-300">{session.user.email}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Profile</h1>
@@ -85,11 +186,18 @@ export default function ProfilePage() {
             <Card className="bg-neutral-900 border-neutral-800">
                 <CardHeader className="pb-4">
                     <div className="flex items-center space-x-4">
-                        <Avatar className="w-16 h-16">
-                            <AvatarFallback className="bg-neutral-700 text-white text-xl">
-                                {session.user.name?.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
+                        <div className="hidden md:flex items-center">
+                            {avatarPreview ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={avatarPreview} alt="avatar" className="w-16 h-16 rounded-full object-cover border-2 border-neutral-700" />
+                            ) : (
+                                <Avatar className="w-16 h-16">
+                                    <AvatarFallback className="bg-neutral-700 text-white text-xl">
+                                        {session.user.name?.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            )}
+                        </div>
                         <div>
                             <CardTitle className="text-white">{session.user.name}</CardTitle>
                             <p className="text-neutral-400">{session.user.email}</p>
@@ -134,16 +242,49 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
+                        {/* Image upload controls */}
+                        {isEditing && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label className="text-neutral-300 text-sm">Profile Photo</Label>
+                                    <div className="flex items-center gap-3">
+                                        <Button variant="outline" onClick={() => avatarInputRef.current?.click()} className="border-neutral-700 text-neutral-300">
+                                            Upload Avatar
+                                        </Button>
+                                        <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'avatar')} />
+                                        {avatarPreview && (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={avatarPreview} alt="avatar preview" className="w-16 h-16 rounded object-cover border" />
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-neutral-300 text-sm">Background Photo</Label>
+                                    <div className="flex items-center gap-3">
+                                        <Button variant="outline" onClick={() => backgroundInputRef.current?.click()} className="border-neutral-700 text-neutral-300">
+                                            Upload Background
+                                        </Button>
+                                        <input ref={backgroundInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'background')} />
+                                        {backgroundPreview && (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={backgroundPreview} alt="background preview" className="w-32 h-16 rounded object-cover border" />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="space-y-2">
                             <Label className="text-neutral-300 text-sm flex items-center gap-2">
                                 <Calendar className="w-4 h-4" />
                                 Member Since
                             </Label>
                             <div className="p-3 bg-neutral-800 rounded-md text-white">
-                                {new Date().toLocaleDateString('en-US', { 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
+                                {new Date().toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
                                 })}
                             </div>
                         </div>
