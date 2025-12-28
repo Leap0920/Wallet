@@ -36,6 +36,8 @@ interface DashboardLayoutProps {
 const navigation = [
   { name: "Home", href: "/dashboard", icon: Home },
   { name: "Ipon Challenge", href: "/dashboard/ipon", icon: PiggyBank },
+  { name: "Profile", href: "/dashboard/profile", icon: User },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
 export function DashboardLayout({ children, user }: DashboardLayoutProps) {
@@ -144,13 +146,17 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                   <p className="text-xs text-neutral-500 truncate">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator className="bg-neutral-800" />
-                <DropdownMenuItem className="text-neutral-300 focus:bg-neutral-800 focus:text-white cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
+                <DropdownMenuItem asChild className="text-neutral-300 focus:bg-neutral-800 focus:text-white cursor-pointer">
+                  <Link href="/dashboard/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-neutral-300 focus:bg-neutral-800 focus:text-white cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
+                <DropdownMenuItem asChild className="text-neutral-300 focus:bg-neutral-800 focus:text-white cursor-pointer">
+                  <Link href="/dashboard/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-neutral-800" />
                 <DropdownMenuItem 
