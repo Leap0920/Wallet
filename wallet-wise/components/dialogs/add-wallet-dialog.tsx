@@ -58,11 +58,11 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
       setFormData({ name: "", type: "e-wallet", balance: formData.balance, icon: "wallet" })
     } else {
       setSelectedPreset(preset.name)
-      setFormData({ 
-        name: preset.name, 
-        type: preset.type, 
+      setFormData({
+        name: preset.name,
+        type: preset.type,
         balance: formData.balance,
-        icon: preset.icon 
+        icon: preset.icon
       })
     }
   }
@@ -74,7 +74,10 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
     try {
       const res = await fetch("/api/wallets", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache"
+        },
         body: JSON.stringify({
           ...formData,
           balance: parseFloat(formData.balance) || 0
@@ -82,6 +85,9 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
       })
 
       if (!res.ok) throw new Error("Failed to create wallet")
+
+      // Wait for the response to ensure the wallet is fully saved
+      await res.json()
 
       toast.success("Wallet created")
       setFormData({ name: "", type: "e-wallet", balance: "", icon: "wallet" })
@@ -101,7 +107,7 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
         <DialogHeader>
           <DialogTitle className="text-white">Add Wallet</DialogTitle>
         </DialogHeader>
-        
+
         {/* Presets */}
         <div className="grid grid-cols-4 gap-2">
           {WALLET_PRESETS.map((preset) => (
@@ -109,11 +115,10 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
               key={preset.name}
               type="button"
               variant="outline"
-              className={`h-auto py-3 flex flex-col gap-1 ${
-                selectedPreset === preset.name 
-                  ? "border-white bg-neutral-800" 
+              className={`h-auto py-3 flex flex-col gap-1 ${selectedPreset === preset.name
+                  ? "border-white bg-neutral-800"
                   : "border-neutral-700 hover:bg-neutral-800"
-              }`}
+                }`}
               onClick={() => handlePresetSelect(preset)}
             >
               <span className="text-xs text-neutral-300">{preset.name}</span>

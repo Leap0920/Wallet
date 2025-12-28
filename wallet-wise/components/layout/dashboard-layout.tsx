@@ -110,7 +110,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           {/* Mobile menu */}
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden text-neutral-400 hover:text-white">
+              <Button variant="ghost" size="icon" className="lg:hidden text-neutral-400 hover:text-white" suppressHydrationWarning>
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -132,7 +132,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           <div className="flex flex-1 justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
+                <Button variant="ghost" className="h-8 w-8 rounded-full p-0" suppressHydrationWarning>
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-neutral-700 text-white text-sm">
                       {user.name.charAt(0).toUpperCase()}

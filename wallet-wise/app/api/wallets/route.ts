@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    revalidatePath("/dashboard")
     return NextResponse.json(wallet)
   } catch (error) {
     return NextResponse.json({ error: "Failed to create wallet" }, { status: 500 })

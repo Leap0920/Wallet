@@ -3,6 +3,9 @@ import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
 import { DashboardClient } from "./dashboard-client"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 export default async function DashboardPage() {
   const session = await auth()
 
@@ -24,12 +27,14 @@ export default async function DashboardPage() {
     }),
     prisma.transaction.findMany({
       where: { userId: session.user.id },
-      include: { 
+      include: {
         wallet: true,
         fromWallet: true,
         toWallet: true
       },
-      orderBy: { date: "desc" },
+      orderBy: [
+        { createdAt: "desc" }
+      ],
       take: 100
     }),
     prisma.transaction.aggregate({
@@ -89,9 +94,9 @@ export default async function DashboardPage() {
   // Balance trend (last 30 days) - simplified calculation
   const balanceTrend: Array<{ date: string; balance: number }> = []
   let runningBalance = totalBalance
-  
+
   // Get transactions sorted by date descending
-  const sortedTx = [...transactions].sort((a, b) => 
+  const sortedTx = [...transactions].sort((a, b) =>
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
@@ -99,7 +104,7 @@ export default async function DashboardPage() {
   for (let i = 0; i <= 30; i += 5) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
     const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
-    
+
     // Calculate balance at this point by subtracting future transactions
     let balanceAtDate = totalBalance
     for (const tx of sortedTx) {
@@ -111,7 +116,7 @@ export default async function DashboardPage() {
         }
       }
     }
-    
+
     balanceTrend.unshift({ date: dateStr, balance: balanceAtDate })
   }
 

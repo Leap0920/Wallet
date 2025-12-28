@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Plus, 
-  ArrowUpRight, 
+import {
+  Plus,
+  ArrowUpRight,
   Eye,
   EyeOff,
   Settings,
@@ -87,7 +87,7 @@ const categoryConfig: Record<string, { icon: string; color: string; bgColor: str
 
 const walletColors = [
   "bg-blue-500",
-  "bg-cyan-500", 
+  "bg-cyan-500",
   "bg-purple-500",
   "bg-pink-500",
   "bg-green-500",
@@ -102,11 +102,11 @@ export function DashboardClient({ data }: DashboardClientProps) {
   const [showAddWallet, setShowAddWallet] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | "income" | "expense" | "transfer">("all")
-  const [deleteConfirm, setDeleteConfirm] = useState<{ 
+  const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean
     type: 'transaction' | 'wallet' | null
     id: string | null
-    name: string 
+    name: string
   }>({
     open: false,
     type: null,
@@ -123,7 +123,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
     return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
   }
 
-  const expenseChange = data.lastMonthExpenses > 0 
+  const expenseChange = data.lastMonthExpenses > 0
     ? ((data.monthlyExpenses - data.lastMonthExpenses) / data.lastMonthExpenses * 100)
     : 0
 
@@ -137,15 +137,22 @@ export function DashboardClient({ data }: DashboardClientProps) {
 
   const handleDeleteConfirm = async () => {
     if (!deleteConfirm.id || !deleteConfirm.type) return
-    
+
     setDeletingId(deleteConfirm.id)
     try {
-      const url = deleteConfirm.type === 'transaction' 
+      const url = deleteConfirm.type === 'transaction'
         ? `/api/transactions/${deleteConfirm.id}`
         : `/api/wallets/${deleteConfirm.id}`
-      
-      const res = await fetch(url, { method: "DELETE" })
+
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: { "Cache-Control": "no-cache" }
+      })
       if (!res.ok) throw new Error()
+
+      // Wait for the response to ensure the deletion is complete
+      await res.json()
+
       toast.success(deleteConfirm.type === 'transaction' ? "Transaction deleted" : "Wallet deleted")
       router.refresh()
     } catch {
@@ -194,15 +201,17 @@ export function DashboardClient({ data }: DashboardClientProps) {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "accounts" | "records")}>
         <TabsList className="bg-transparent border-b border-neutral-800 w-full justify-start rounded-none h-auto p-0 gap-6">
-          <TabsTrigger 
-            value="accounts" 
+          <TabsTrigger
+            value="accounts"
             className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-neutral-500 rounded-none px-0 pb-3"
+            suppressHydrationWarning
           >
             Accounts
           </TabsTrigger>
-          <TabsTrigger 
-            value="records" 
+          <TabsTrigger
+            value="records"
             className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-neutral-500 rounded-none px-0 pb-3"
+            suppressHydrationWarning
           >
             Records
           </TabsTrigger>
@@ -222,8 +231,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
                 {data.wallets.map((wallet, index) => (
-                  <div 
-                    key={wallet.id} 
+                  <div
+                    key={wallet.id}
                     className={`${walletColors[index % walletColors.length]} rounded-xl p-4 relative group`}
                   >
                     <button
@@ -239,7 +248,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
                     </p>
                   </div>
                 ))}
-                <button 
+                <button
                   onClick={() => setShowAddWallet(true)}
                   className="border-2 border-dashed border-neutral-700 rounded-xl p-4 flex items-center justify-center gap-2 text-neutral-400 hover:border-neutral-600 hover:text-neutral-300 transition-colors"
                 >
@@ -269,8 +278,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
                 {showBalance ? formatCurrency(data.monthlyExpenses) : "••••••"}
               </p>
               {data.categoryData.length > 0 ? (
-                <ExpenseDonutChart 
-                  data={data.categoryData} 
+                <ExpenseDonutChart
+                  data={data.categoryData}
                   total={data.monthlyExpenses}
                   showBalance={showBalance}
                 />
@@ -328,14 +337,14 @@ export function DashboardClient({ data }: DashboardClientProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white capitalize">
-                        {tx.type === 'income' 
-                          ? 'Income' 
-                          : tx.type === 'transfer' 
+                        {tx.type === 'income'
+                          ? 'Income'
+                          : tx.type === 'transfer'
                             ? `Transfer to ${tx.toWallet?.name || 'Unknown'}`
                             : tx.category || 'Expense'}
                       </p>
                       <p className="text-xs text-neutral-500">
-                        {tx.type === 'transfer' 
+                        {tx.type === 'transfer'
                           ? `From ${tx.fromWallet?.name || 'Unknown'}`
                           : tx.wallet.name}
                       </p>
@@ -347,17 +356,16 @@ export function DashboardClient({ data }: DashboardClientProps) {
                       )}
                     </div>
                     <div className="text-right">
-                      <p className={`text-sm font-medium ${
-                        tx.type === 'income' 
-                          ? 'text-green-400' 
+                      <p className={`text-sm font-medium ${tx.type === 'income'
+                        ? 'text-green-400'
+                        : tx.type === 'transfer'
+                          ? 'text-blue-400'
+                          : 'text-red-400'
+                        }`}>
+                        {tx.type === 'income'
+                          ? ''
                           : tx.type === 'transfer'
-                            ? 'text-blue-400'
-                            : 'text-red-400'
-                      }`}>
-                        {tx.type === 'income' 
-                          ? '' 
-                          : tx.type === 'transfer' 
-                            ? '→' 
+                            ? '→'
                             : '-'}{formatCurrency(tx.amount)}
                       </p>
                       <p className="text-xs text-neutral-500">{formatDate(tx.date)}</p>
@@ -371,8 +379,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
                 </div>
               )}
               {data.transactions.length > 5 && (
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="w-full text-blue-400 hover:text-blue-300 text-sm"
                   onClick={() => setActiveTab("records")}
                 >
@@ -440,14 +448,14 @@ export function DashboardClient({ data }: DashboardClientProps) {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-white capitalize">
-                                {tx.type === 'income' 
-                                  ? 'Income' 
-                                  : tx.type === 'transfer' 
+                                {tx.type === 'income'
+                                  ? 'Income'
+                                  : tx.type === 'transfer'
                                     ? `Transfer to ${tx.toWallet?.name || 'Unknown'}`
                                     : tx.category || 'Expense'}
                               </p>
                               <p className="text-xs text-neutral-500">
-                                {tx.type === 'transfer' 
+                                {tx.type === 'transfer'
                                   ? `From ${tx.fromWallet?.name || 'Unknown'}`
                                   : tx.wallet.name}
                               </p>
@@ -460,17 +468,16 @@ export function DashboardClient({ data }: DashboardClientProps) {
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="text-right">
-                                <p className={`text-sm font-medium ${
-                                  tx.type === 'income' 
-                                    ? 'text-green-400' 
+                                <p className={`text-sm font-medium ${tx.type === 'income'
+                                  ? 'text-green-400'
+                                  : tx.type === 'transfer'
+                                    ? 'text-blue-400'
+                                    : 'text-red-400'
+                                  }`}>
+                                  {tx.type === 'income'
+                                    ? ''
                                     : tx.type === 'transfer'
-                                      ? 'text-blue-400'
-                                      : 'text-red-400'
-                                }`}>
-                                  {tx.type === 'income' 
-                                    ? '' 
-                                    : tx.type === 'transfer' 
-                                      ? '→' 
+                                      ? '→'
                                       : '-'}{formatCurrency(tx.amount)}
                                 </p>
                                 <p className="text-xs text-neutral-500">{formatDate(tx.date)}</p>

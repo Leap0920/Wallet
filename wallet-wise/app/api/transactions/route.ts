@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
@@ -39,15 +40,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { 
-      type, 
-      amount, 
-      description, 
-      category, 
-      walletId, 
-      fromWalletId, 
-      toWalletId, 
-      transferFee, 
+    const {
+      type,
+      amount,
+      description,
+      category,
+      walletId,
+      fromWalletId,
+      toWalletId,
+      transferFee,
       date,
       isUndo,
       originalId
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
 
       const transaction = await prisma.transaction.create({
         data: transactionData,
-        include: { 
+        include: {
           wallet: true,
           fromWallet: true,
           toWallet: true
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
+      revalidatePath("/dashboard")
       return NextResponse.json(transaction)
     }
 
@@ -154,7 +156,7 @@ export async function POST(request: NextRequest) {
           date: date ? new Date(date) : new Date(),
           userId: session.user.id
         },
-        include: { 
+        include: {
           wallet: true,
           fromWallet: true,
           toWallet: true
@@ -175,6 +177,7 @@ export async function POST(request: NextRequest) {
         })
       ])
 
+      revalidatePath("/dashboard")
       return NextResponse.json(transaction)
     } else {
       // Regular income/expense transaction
@@ -212,6 +215,7 @@ export async function POST(request: NextRequest) {
         data: { balance: { increment: balanceChange } }
       })
 
+      revalidatePath("/dashboard")
       return NextResponse.json(transaction)
     }
   } catch (error) {

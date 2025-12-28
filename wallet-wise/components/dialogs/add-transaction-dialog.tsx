@@ -63,7 +63,7 @@ export function AddTransactionDialog({ open, onOpenChange, wallets, onSuccess }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (formData.type === "transfer") {
       if (!formData.fromWalletId || !formData.toWalletId) {
         toast.error("Please select both source and destination wallets")
@@ -85,11 +85,17 @@ export function AddTransactionDialog({ open, onOpenChange, wallets, onSuccess }:
     try {
       const res = await fetch("/api/transactions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache"
+        },
         body: JSON.stringify(formData)
       })
 
       if (!res.ok) throw new Error("Failed to create transaction")
+
+      // Wait for the response to ensure the transaction is fully saved
+      await res.json()
 
       toast.success(formData.type === "transfer" ? "Transfer completed" : "Transaction added")
       setFormData({
@@ -125,8 +131,8 @@ export function AddTransactionDialog({ open, onOpenChange, wallets, onSuccess }:
             <Button
               type="button"
               variant={formData.type === "expense" ? "default" : "outline"}
-              className={formData.type === "expense" 
-                ? "bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30" 
+              className={formData.type === "expense"
+                ? "bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
                 : "border-neutral-700 text-neutral-400 hover:bg-neutral-800"}
               onClick={() => setFormData({ ...formData, type: "expense" })}
             >
@@ -135,8 +141,8 @@ export function AddTransactionDialog({ open, onOpenChange, wallets, onSuccess }:
             <Button
               type="button"
               variant={formData.type === "income" ? "default" : "outline"}
-              className={formData.type === "income" 
-                ? "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30" 
+              className={formData.type === "income"
+                ? "bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30"
                 : "border-neutral-700 text-neutral-400 hover:bg-neutral-800"}
               onClick={() => setFormData({ ...formData, type: "income" })}
             >
@@ -145,8 +151,8 @@ export function AddTransactionDialog({ open, onOpenChange, wallets, onSuccess }:
             <Button
               type="button"
               variant={formData.type === "transfer" ? "default" : "outline"}
-              className={formData.type === "transfer" 
-                ? "bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30" 
+              className={formData.type === "transfer"
+                ? "bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30"
                 : "border-neutral-700 text-neutral-400 hover:bg-neutral-800"}
               onClick={() => setFormData({ ...formData, type: "transfer" })}
             >

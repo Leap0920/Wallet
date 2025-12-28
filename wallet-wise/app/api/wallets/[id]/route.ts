@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
@@ -19,6 +20,7 @@ export async function DELETE(
       where: { id, userId: session.user.id }
     })
 
+    revalidatePath("/dashboard")
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete wallet" }, { status: 500 })
@@ -44,6 +46,7 @@ export async function PUT(
       data: { name, type, balance, color, icon }
     })
 
+    revalidatePath("/dashboard")
     return NextResponse.json(wallet)
   } catch (error) {
     return NextResponse.json({ error: "Failed to update wallet" }, { status: 500 })
