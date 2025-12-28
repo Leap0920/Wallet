@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth-helper"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
 import { DashboardClient } from "./dashboard-client"

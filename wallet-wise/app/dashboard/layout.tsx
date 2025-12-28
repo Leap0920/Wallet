@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth-helper"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 
