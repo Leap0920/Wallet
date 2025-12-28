@@ -2,16 +2,13 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { 
-    Settings, 
-    Shield, 
-    Bell, 
-    Palette, 
-    Database, 
-    Trash2, 
-    Eye, 
-    EyeOff, 
-    Save,
+import {
+    Settings,
+    Shield,
+    Database,
+    Trash2,
+    Eye,
+    EyeOff,
     Loader2,
     AlertTriangle
 } from "lucide-react"
@@ -19,9 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import { 
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -40,33 +35,19 @@ export default function SettingsPage() {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false)
     const [showNewPassword, setShowNewPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-    
+
     const [passwordData, setPasswordData] = useState({
         currentPassword: "",
         newPassword: "",
         confirmPassword: ""
     })
-
-    const [preferences, setPreferences] = useState({
-        emailNotifications: true,
-        pushNotifications: false,
-        weeklyReports: true,
-        monthlyReports: true,
-        darkMode: true,
-        currency: "PHP"
-    })
-
     const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPasswordData({ ...passwordData, [e.target.name]: e.target.value })
     }
 
-    const handlePreferenceChange = (key: string, value: boolean | string) => {
-        setPreferences({ ...preferences, [key]: value })
-    }
-
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         if (passwordData.newPassword !== passwordData.confirmPassword) {
             toast.error("New passwords don't match")
             return
@@ -101,28 +82,6 @@ export default function SettingsPage() {
             setIsLoading(false)
         }
     }
-
-    const handleSavePreferences = async () => {
-        setIsLoading(true)
-        try {
-            const response = await fetch("/api/user/preferences", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(preferences),
-            })
-
-            if (response.ok) {
-                toast.success("Preferences saved successfully!")
-            } else {
-                throw new Error("Failed to save preferences")
-            }
-        } catch (error) {
-            toast.error("Failed to save preferences. Please try again.")
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
     const handleDeleteAccount = async () => {
         try {
             const response = await fetch("/api/user/delete-account", {
@@ -167,7 +126,7 @@ export default function SettingsPage() {
                 <CardContent className="space-y-6">
                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
                         <h3 className="text-lg font-medium text-white">Change Password</h3>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-neutral-300 text-sm">Current Password</Label>
@@ -247,120 +206,12 @@ export default function SettingsPage() {
                                     Updating...
                                 </>
                             ) : (
-                                <>
-                                    <Save className="w-4 h-4 mr-2" />
-                                    Update Password
-                                </>
+                                "Update Password"
                             )}
                         </Button>
                     </form>
                 </CardContent>
             </Card>
-
-            {/* Notification Preferences */}
-            <Card className="bg-neutral-900 border-neutral-800">
-                <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                        <Bell className="w-5 h-5" />
-                        Notifications
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <Label className="text-white">Email Notifications</Label>
-                            <p className="text-sm text-neutral-400">Receive notifications via email</p>
-                        </div>
-                        <Switch
-                            checked={preferences.emailNotifications}
-                            onCheckedChange={(checked) => handlePreferenceChange("emailNotifications", checked)}
-                        />
-                    </div>
-
-                    <Separator className="bg-neutral-800" />
-
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <Label className="text-white">Push Notifications</Label>
-                            <p className="text-sm text-neutral-400">Receive push notifications in browser</p>
-                        </div>
-                        <Switch
-                            checked={preferences.pushNotifications}
-                            onCheckedChange={(checked) => handlePreferenceChange("pushNotifications", checked)}
-                        />
-                    </div>
-
-                    <Separator className="bg-neutral-800" />
-
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <Label className="text-white">Weekly Reports</Label>
-                            <p className="text-sm text-neutral-400">Get weekly spending summaries</p>
-                        </div>
-                        <Switch
-                            checked={preferences.weeklyReports}
-                            onCheckedChange={(checked) => handlePreferenceChange("weeklyReports", checked)}
-                        />
-                    </div>
-
-                    <Separator className="bg-neutral-800" />
-
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <Label className="text-white">Monthly Reports</Label>
-                            <p className="text-sm text-neutral-400">Get monthly financial insights</p>
-                        </div>
-                        <Switch
-                            checked={preferences.monthlyReports}
-                            onCheckedChange={(checked) => handlePreferenceChange("monthlyReports", checked)}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Appearance */}
-            <Card className="bg-neutral-900 border-neutral-800">
-                <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                        <Palette className="w-5 h-5" />
-                        Appearance
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <Label className="text-white">Dark Mode</Label>
-                            <p className="text-sm text-neutral-400">Use dark theme throughout the app</p>
-                        </div>
-                        <Switch
-                            checked={preferences.darkMode}
-                            onCheckedChange={(checked) => handlePreferenceChange("darkMode", checked)}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Save Preferences */}
-            <div className="flex justify-end">
-                <Button
-                    onClick={handleSavePreferences}
-                    disabled={isLoading}
-                    className="bg-white text-black hover:bg-neutral-200"
-                >
-                    {isLoading ? (
-                        <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Saving...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Save Preferences
-                        </>
-                    )}
-                </Button>
-            </div>
-
             {/* Danger Zone */}
             <Card className="bg-neutral-900 border-red-800">
                 <CardHeader>
