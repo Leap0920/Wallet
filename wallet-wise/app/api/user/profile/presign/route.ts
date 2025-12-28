@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
+// import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
+// import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 // This route returns a presigned PUT URL and the resulting public URL for an object key.
 export async function POST(request: NextRequest) {
@@ -9,6 +9,10 @@ export async function POST(request: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Temporarily disabled AWS S3 functionality for deployment
+    return NextResponse.json({ error: 'S3 functionality temporarily disabled' }, { status: 503 })
+
+    /* 
     const body = await request.json()
     const { filename, contentType, keyPrefix } = body || {}
     if (!filename || !contentType) return NextResponse.json({ error: 'filename and contentType are required' }, { status: 400 })
@@ -42,6 +46,7 @@ export async function POST(request: NextRequest) {
     const publicUrl = `${publicBase}/${key}`
 
     return NextResponse.json({ uploadUrl, publicUrl, key })
+    */
   } catch (err: any) {
     console.error('Presign error', err)
     return NextResponse.json({ error: err?.message || 'Presign failed' }, { status: 500 })
