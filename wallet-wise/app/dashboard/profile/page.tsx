@@ -163,7 +163,7 @@ export default function ProfilePage() {
                     if (typeof updated.backgroundUrl === "string") setBackgroundPreview(updated.backgroundUrl)
                     if (typeof updated.name === "string") setFormData((s) => ({ ...s, name: updated.name }))
                     // also update next-auth session display if possible
-                    try { await update({ name: updated.name ?? formData.name, image: updated.avatarUrl ?? avatarPreview ?? session.user.image }) } catch (e) { /* ignore */ }
+                    try { await update({ name: updated.name ?? formData.name, image: updated.avatarUrl ?? avatarPreview ?? session?.user?.image }) } catch (e) { /* ignore */ }
                 }
                 setIsEditing(false)
                 toast.success("Profile updated successfully!")
