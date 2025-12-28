@@ -1,0 +1,90 @@
+// This is your Prisma schema file for WalletWise
+// Using MongoDB as the database provider
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// User Model - for authentication
+model User {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  email          String   @unique
+  password       String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  wallets        Wallet[]
+  transactions   Transaction[]
+  iponGoals      IponGoal[]
+}
+
+// Wallet Model - GCash, Maya, Cash, PayPal, MariBank, etc.
+model Wallet {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String   // e.g., "GCash", "Maya", "Cash"
+  type           String   // "e-wallet", "bank", "cash"
+  balance        Float    @default(0)
+  color          String   @default("#3b82f6") // For UI color coding
+  icon           String   @default("wallet") // Lucide icon name
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  userId         String   @db.ObjectId
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  transactions   Transaction[] @relation("WalletTransactions")
+  transfersFrom  Transaction[] @relation("TransferFrom")
+  transfersTo    Transaction[] @relation("TransferTo")
+}
+
+// Transaction Model - Expense, Income, Transfer
+model Transaction {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  type                String   // "expense", "income", "transfer"
+  amount              Float
+  description         String?
+  category            String?  // e.g., "Food", "Transport", "Bills"
+  date                DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  // For expense/income: which wallet was affected
+  walletId            String   @db.ObjectId
+  wallet              Wallet   @relation("WalletTransactions", fields: [walletId], references: [id], onDelete: Cascade)
+  
+  // For transfers only
+  fromWalletId        String?  @db.ObjectId
+  fromWallet          Wallet?  @relation("TransferFrom", fields: [fromWalletId], references: [id], onDelete: SetNull)
+  toWalletId          String?  @db.ObjectId
+  toWallet            Wallet?  @relation("TransferTo", fields: [toWalletId], references: [id], onDelete: SetNull)
+  transferFee         Float?   // Optional transfer fee
+  
+  userId              String   @db.ObjectId
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Ipon Goal Model - Separate savings tracker (not connected to wallets)
+model IponGoal {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String   // e.g., "New Mouse"
+  targetAmount   Float    // e.g., 800
+  currentAmount  Float    @default(0)
+  isCompleted    Boolean  @default(false)
+  targetDate     DateTime?
+  
+  // Denomination breakdown - stores required bills and which are checked
+  // Format: [{ denom: 500, required: 1, checked: 0 }, { denom: 100, required: 2, checked: 1 }, ...]
+  denominations  Json?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  userId         String   @db.ObjectId
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
