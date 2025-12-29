@@ -56,7 +56,7 @@ export function IponClient({ goals }: IponClientProps) {
 
   const handleDeleteConfirm = async () => {
     if (!deleteConfirm.goalId) return
-    
+
     try {
       const res = await fetch(`/api/ipon/${deleteConfirm.goalId}`, { method: "DELETE" })
       if (!res.ok) throw new Error()
@@ -71,10 +71,10 @@ export function IponClient({ goals }: IponClientProps) {
 
   const handleToggleDenom = async (goalId: string, denomIndex: number, currentDenoms: Denomination[], action: 'add' | 'remove') => {
     setUpdating(goalId)
-    
+
     const newDenoms = [...currentDenoms]
     const denom = newDenoms[denomIndex]
-    
+
     if (action === 'add') {
       // Add one check (if not at max)
       if (denom.checked < denom.required) {
@@ -93,7 +93,7 @@ export function IponClient({ goals }: IponClientProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ denominations: newDenoms })
       })
-      
+
       if (!res.ok) throw new Error()
       router.refresh()
     } catch {
@@ -114,7 +114,7 @@ export function IponClient({ goals }: IponClientProps) {
           <h1 className="text-2xl font-semibold text-white">Ipon Challenge</h1>
           <p className="text-neutral-500 text-sm">Track your savings goals</p>
         </div>
-        <Button 
+        <Button
           className="bg-white text-black hover:bg-neutral-200"
           onClick={() => setShowAddGoal(true)}
         >
@@ -167,7 +167,7 @@ export function IponClient({ goals }: IponClientProps) {
                 <CardContent className="p-5">
                   {/* Goal Header */}
                   <div className="flex items-start justify-between mb-4">
-                    <div 
+                    <div
                       className="flex-1 cursor-pointer"
                       onClick={() => setExpandedGoal(isExpanded ? null : goal.id)}
                     >
@@ -199,7 +199,7 @@ export function IponClient({ goals }: IponClientProps) {
 
                   {/* Progress Bar */}
                   <div className="w-full bg-neutral-800 rounded-full h-2 mb-4">
-                    <div 
+                    <div
                       className="bg-white h-2 rounded-full transition-all"
                       style={{ width: `${Math.min(progress, 100)}%` }}
                     />
@@ -207,10 +207,9 @@ export function IponClient({ goals }: IponClientProps) {
 
                   {/* Denomination Checklist */}
                   {denoms && denoms.length > 0 && (
-                    <div 
-                      className={`space-y-3 overflow-hidden transition-all ${
-                        isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-                      }`}
+                    <div
+                      className={`space-y-3 overflow-hidden transition-all ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                        }`}
                     >
                       <p className="text-xs text-neutral-500 pt-2 border-t border-neutral-800">
                         Tap + to add a bill, - to undo:
@@ -220,17 +219,16 @@ export function IponClient({ goals }: IponClientProps) {
                           const maxDots = 8
                           const showDots = d.required <= maxDots
                           const progressPercent = d.required > 0 ? (d.checked / d.required) * 100 : 0
-                          
+
                           return (
                             <div
                               key={`${d.denom}-${idx}`}
-                              className={`p-3 rounded-xl border transition-all ${
-                                d.checked === d.required
+                              className={`p-3 rounded-xl border transition-all ${d.checked === d.required
                                   ? 'bg-green-500/10 border-green-500/30'
                                   : d.checked > 0
-                                  ? 'bg-neutral-800 border-neutral-600'
-                                  : 'bg-neutral-800/50 border-neutral-700'
-                              }`}
+                                    ? 'bg-neutral-800 border-neutral-600'
+                                    : 'bg-neutral-800/50 border-neutral-700'
+                                }`}
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-xl font-semibold text-white">₱{d.denom}</span>
@@ -238,7 +236,7 @@ export function IponClient({ goals }: IponClientProps) {
                                   <Check className="w-5 h-5 text-green-500" />
                                 )}
                               </div>
-                              
+
                               {/* Progress indicator */}
                               <div className="mb-3">
                                 {showDots ? (
@@ -246,15 +244,14 @@ export function IponClient({ goals }: IponClientProps) {
                                     {Array.from({ length: d.required }).map((_, i) => (
                                       <div
                                         key={i}
-                                        className={`w-2 h-2 rounded-full transition-colors ${
-                                          i < d.checked ? 'bg-green-500' : 'bg-neutral-600'
-                                        }`}
+                                        className={`w-2 h-2 rounded-full transition-colors ${i < d.checked ? 'bg-green-500' : 'bg-neutral-600'
+                                          }`}
                                       />
                                     ))}
                                   </div>
                                 ) : (
                                   <div className="w-full bg-neutral-700 rounded-full h-1.5">
-                                    <div 
+                                    <div
                                       className="bg-green-500 h-1.5 rounded-full transition-all"
                                       style={{ width: `${progressPercent}%` }}
                                     />
@@ -264,7 +261,7 @@ export function IponClient({ goals }: IponClientProps) {
                                   {d.checked}/{d.required}
                                 </span>
                               </div>
-                              
+
                               <div className="flex flex-col sm:flex-row items-stretch gap-1.5">
                                 <Button
                                   type="button"
@@ -298,7 +295,7 @@ export function IponClient({ goals }: IponClientProps) {
 
                   {/* Expand hint */}
                   {denoms && denoms.length > 0 && !isExpanded && (
-                    <button 
+                    <button
                       className="text-xs text-neutral-500 hover:text-white transition-colors"
                       onClick={() => setExpandedGoal(goal.id)}
                     >
@@ -319,35 +316,35 @@ export function IponClient({ goals }: IponClientProps) {
           {completedGoals.map((goal) => (
             <Card key={goal.id} className="bg-neutral-900/50 border-neutral-800">
               <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                        <Check className="w-5 h-5 text-green-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-white">{goal.name}</h3>
-                        <p className="text-sm text-neutral-500">{formatCurrency(goal.targetAmount)}</p>
-                      </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <Check className="w-5 h-5 text-green-500" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-neutral-500 hover:text-blue-400"
-                        onClick={() => setEditingGoal(goal)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-neutral-500 hover:text-red-400"
-                        onClick={() => handleDeleteClick(goal.id, goal.name)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <div>
+                      <h3 className="font-medium text-white">{goal.name}</h3>
+                      <p className="text-sm text-neutral-500">{formatCurrency(goal.targetAmount)}</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-neutral-500 hover:text-blue-400"
+                      onClick={() => setEditingGoal(goal)}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-neutral-500 hover:text-red-400"
+                      onClick={() => handleDeleteClick(goal.id, goal.name)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -363,7 +360,7 @@ export function IponClient({ goals }: IponClientProps) {
             <p className="text-neutral-500 text-sm text-center mb-6 max-w-sm">
               Create your first Ipon goal and track your progress with denomination checklists.
             </p>
-            <Button 
+            <Button
               className="bg-white text-black hover:bg-neutral-200"
               onClick={() => setShowAddGoal(true)}
             >

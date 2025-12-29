@@ -24,8 +24,8 @@ export function BalanceTrendChart({ data, showBalance }: BalanceTrendChartProps)
   }
 
   // Mask data if balance is hidden
-  const chartData = showBalance 
-    ? data 
+  const chartData = showBalance
+    ? data
     : data.map(d => ({ ...d, balance: 0 }))
 
   const minBalance = Math.min(...data.map(d => d.balance))
@@ -42,16 +42,16 @@ export function BalanceTrendChart({ data, showBalance }: BalanceTrendChartProps)
               <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <XAxis 
-            dataKey="date" 
-            stroke="#525252" 
+          <XAxis
+            dataKey="date"
+            stroke="#525252"
             fontSize={10}
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
           />
-          <YAxis 
-            stroke="#525252" 
+          <YAxis
+            stroke="#525252"
             fontSize={10}
             tickLine={false}
             axisLine={false}

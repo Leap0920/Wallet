@@ -50,13 +50,13 @@ export function ExpenseDonutChart({ data, total, showBalance }: ExpenseDonutChar
           </p>
         </div>
       </div>
-      
+
       {/* Legend */}
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
         {chartData.slice(0, 6).map((item, index) => (
           <div key={item.name} className="flex items-center gap-1.5">
-            <div 
-              className="w-2 h-2 rounded-full" 
+            <div
+              className="w-2 h-2 rounded-full"
               style={{ backgroundColor: item.color }}
             />
             <span className="text-xs text-neutral-400 capitalize">{item.name}</span>
