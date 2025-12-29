@@ -209,7 +209,7 @@ export function IponClient({ goals }: IponClientProps) {
                       <p className="text-xs text-neutral-500 pt-2 border-t border-neutral-800">
                         Tap + to add a bill, - to undo:
                       </p>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {denoms.map((d, idx) => {
                           const maxDots = 8
                           const showDots = d.required <= maxDots
@@ -219,10 +219,10 @@ export function IponClient({ goals }: IponClientProps) {
                             <div
                               key={`${d.denom}-${idx}`}
                               className={`p-3 rounded-xl border transition-all ${d.checked === d.required
-                                  ? 'bg-green-500/10 border-green-500/30'
-                                  : d.checked > 0
-                                    ? 'bg-neutral-800 border-neutral-600'
-                                    : 'bg-neutral-800/50 border-neutral-700'
+                                ? 'bg-green-500/10 border-green-500/30'
+                                : d.checked > 0
+                                  ? 'bg-neutral-800 border-neutral-600'
+                                  : 'bg-neutral-800/50 border-neutral-700'
                                 }`}
                             >
                               <div className="flex items-center justify-between mb-2">

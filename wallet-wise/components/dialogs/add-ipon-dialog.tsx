@@ -49,7 +49,7 @@ function generateSmartDenominations(amount: number) {
   for (const { denom, maxCount } of strategy) {
     const idealCount = Math.floor(remaining / denom)
     const actualCount = Math.min(idealCount, maxCount)
-    
+
     if (actualCount > 0) {
       result.push({ denom, required: actualCount })
       remaining -= actualCount * denom
@@ -88,8 +88,8 @@ export function AddIponDialog({ open, onOpenChange, onSuccess, editGoal = null }
     }
   }, [editGoal, open])
 
-  const suggestedDenominations = formData.targetAmount 
-    ? generateSmartDenominations(parseFloat(formData.targetAmount)) 
+  const suggestedDenominations = formData.targetAmount
+    ? generateSmartDenominations(parseFloat(formData.targetAmount))
     : []
 
   // Use custom denominations when in customize mode, otherwise use suggestions
@@ -125,7 +125,7 @@ export function AddIponDialog({ open, onOpenChange, onSuccess, editGoal = null }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (Math.abs(difference) > 0.01) {
       toast.error(`Denomination total (₱${totalFromDenominations}) doesn't match target amount (₱${targetAmount})`)
       return
@@ -226,32 +226,32 @@ export function AddIponDialog({ open, onOpenChange, onSuccess, editGoal = null }
                 {customizeMode ? (
                   <div className="space-y-3">
                     <p className="text-xs text-neutral-400">Customize your bill breakdown:</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {AVAILABLE_DENOMINATIONS.map((denom) => {
                         const current = customDenominations.find(d => d.denom === denom)
                         const count = current?.required || 0
                         return (
-                          <div key={denom} className="flex items-center justify-between bg-neutral-700 rounded p-2">
-                            <span className="text-sm text-white">₱{denom}</span>
-                            <div className="flex items-center gap-1">
+                          <div key={denom} className="flex items-center justify-between bg-neutral-700/50 rounded-lg p-1.5 px-3 border border-neutral-600">
+                            <span className="text-sm font-medium text-white">₱{denom}</span>
+                            <div className="flex items-center gap-0.5">
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 text-neutral-400 hover:text-white"
+                                className="h-7 w-7 text-neutral-400 hover:text-white hover:bg-neutral-600 rounded-md"
                                 onClick={() => updateDenomination(denom, -1)}
                               >
-                                <Minus className="w-3 h-3" />
+                                <Minus className="w-3.5 h-3.5" />
                               </Button>
-                              <span className="text-sm text-white w-8 text-center">{count}</span>
+                              <span className="text-sm font-bold text-white w-8 text-center">{count}</span>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 text-neutral-400 hover:text-white"
+                                className="h-7 w-7 text-neutral-400 hover:text-white hover:bg-neutral-600 rounded-md"
                                 onClick={() => updateDenomination(denom, 1)}
                               >
-                                <Plus className="w-3 h-3" />
+                                <Plus className="w-3.5 h-3.5" />
                               </Button>
                             </div>
                           </div>
@@ -292,9 +292,9 @@ export function AddIponDialog({ open, onOpenChange, onSuccess, editGoal = null }
             </div>
           )}
 
-          <Button 
-            type="submit" 
-            className="w-full bg-white text-black hover:bg-neutral-200" 
+          <Button
+            type="submit"
+            className="w-full bg-white text-black hover:bg-neutral-200"
             disabled={isLoading || (customizeMode && Math.abs(difference) > 0.01)}
           >
             {isLoading ? (
