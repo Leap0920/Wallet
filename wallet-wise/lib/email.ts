@@ -1,15 +1,23 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resendApiKey = process.env.RESEND_API_KEY
+const fromEmailEnv = process.env.FROM_EMAIL
+const fromNameEnv = process.env.FROM_NAME
+
+const resend = new Resend(resendApiKey)
 
 export async function sendVerificationCode(email: string, code: string) {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    if (!resendApiKey) {
       console.error('Resend API key is not configured.')
       return { success: false, error: 'Email provider not configured' }
     }
+    // Determine the "from" header. If a FROM_EMAIL is provided, use it, optionally with FROM_NAME.
+    const fromHeader = fromEmailEnv
+      ? `${fromNameEnv ? fromNameEnv : 'WalletWise'} <${fromEmailEnv}>`
+      : 'WalletWise <onboarding@resend.dev>'
     const { data, error } = await resend.emails.send({
-      from: 'WalletWise <onboarding@resend.dev>',
+      from: fromHeader,
       to: email,
       subject: 'Your Password Reset Code - WalletWise',
       html: `
