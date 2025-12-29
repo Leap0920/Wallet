@@ -49,7 +49,19 @@ export async function POST(request: Request) {
         const result = await sendVerificationCode(email, code)
 
         if (!result.success) {
+            const devMode = process.env.PASSWORD_RESET_DEV_MODE === 'true' || process.env.NODE_ENV !== 'production'
             console.error('Failed to send verification email:', result.error)
+
+            if (devMode) {
+                // In dev mode, still allow flow to continue and expose the code for testing purposes
+                return NextResponse.json({
+                    success: true,
+                    message: 'Verification code generated (dev mode). Email sending is not configured.',
+                    devMode: true,
+                    devCode: code,
+                })
+            }
+
             return NextResponse.json(
                 { error: 'Failed to send verification email. Please try again.' },
                 { status: 500 }

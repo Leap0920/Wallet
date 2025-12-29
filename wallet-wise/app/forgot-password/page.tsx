@@ -21,6 +21,7 @@ export default function ForgotPasswordPage() {
     const [confirmPassword, setConfirmPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [devCode, setDevCode] = useState<string | null>(null)
 
     // Step 1: Send verification code
     const handleSendCode = async (e: React.FormEvent) => {
@@ -40,7 +41,14 @@ export default function ForgotPasswordPage() {
                 throw new Error(data.error || 'Something went wrong')
             }
 
-            toast.success("Verification code sent to your email!")
+            if (data.devMode && data.devCode) {
+                setDevCode(data.devCode)
+                setCode(data.devCode)
+                toast.info("Dev mode: email sending not configured. Using generated code.")
+            } else {
+                setDevCode(null)
+                toast.success("Verification code sent to your email!")
+            }
             setStep('verify')
         } catch (error: any) {
             toast.error(error.message || "Failed to send code. Please try again.")
@@ -222,6 +230,9 @@ export default function ForgotPasswordPage() {
                                     maxLength={6}
                                     required
                                 />
+                                {devCode && (
+                                    <p className="text-xs text-neutral-500">Dev mode: code is prefilled ({devCode}).</p>
+                                )}
                             </div>
                             <Button
                                 type="submit"

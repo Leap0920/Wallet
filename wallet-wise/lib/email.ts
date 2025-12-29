@@ -4,6 +4,10 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function sendVerificationCode(email: string, code: string) {
     try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('Resend API key is not configured.')
+      return { success: false, error: 'Email provider not configured' }
+    }
         const { data, error } = await resend.emails.send({
             from: 'WalletWise <onboarding@resend.dev>',
             to: email,
