@@ -221,6 +221,25 @@ export function DashboardClient({ data }: DashboardClientProps) {
         </Button>
       </div>
 
+      {/* Total Available Balance Section */}
+      <div className="px-1 py-2">
+        <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-1">Total Available Balance</p>
+        <div className="flex items-baseline gap-3">
+          <h2 className="text-3xl font-bold text-white tracking-tight">
+            {showBalance ? formatCurrency(convertedTotalBalance, displayCurrency) : "••••••••"}
+          </h2>
+          {otherCurrencies.length > 0 && (
+            <div className="flex gap-2">
+              {otherCurrencies.map(([curr, balance]) => (
+                <span key={curr} className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-md border border-neutral-700 font-bold uppercase">
+                  {curr} {showBalance ? formatNative(balance, curr) : "••••"}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Tabs - Underline style from original design */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "accounts" | "records")}>
         <TabsList className="bg-transparent border-b border-neutral-800 w-full justify-start rounded-none h-auto p-0 gap-8">
@@ -322,7 +341,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
             </CardContent>
           </Card>
 
-          {/* Balance Trend Card - This is where the Total Available Balance lives */}
+          {/* Balance Trend Card */}
           <Card className="bg-neutral-900 border-neutral-800">
             <CardHeader className="flex flex-row items-start justify-between pb-2">
               <div>
@@ -337,26 +356,6 @@ export function DashboardClient({ data }: DashboardClientProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4 mb-6">
-                <h2 className="text-2xl font-semibold text-white">
-                  {showBalance ? formatCurrency(convertedTotalBalance, displayCurrency) : "••••••"}
-                </h2>
-
-                {/* Multi-currency breakdown (Total Available Balance Stay feature) */}
-                {otherCurrencies.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {otherCurrencies.map(([curr, balance]) => (
-                      <div key={curr} className="flex items-center gap-1.5 bg-neutral-800/50 px-2.5 py-1 rounded-full border border-neutral-800">
-                        <span className="text-[10px] font-bold text-neutral-500">{curr}</span>
-                        <span className="text-xs font-semibold text-white/90">
-                          {showBalance ? formatCurrency(balance, curr) : "••••"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               <div className="h-48">
                 <BalanceTrendChart data={data.balanceTrend} showBalance={showBalance} displayCurrency={displayCurrency} />
               </div>
@@ -398,7 +397,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
                     </div>
                     <div className="text-right">
                       <p className={`text-sm font-semibold tracking-tight ${tx.type === 'income' ? 'text-green-400' :
-                          tx.type === 'transfer' ? 'text-blue-400' : 'text-red-400'
+                        tx.type === 'transfer' ? 'text-blue-400' : 'text-red-400'
                         }`}>
                         {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '→' : '-'}{formatNative(tx.amount, tx.wallet.currency)}
                       </p>
@@ -496,7 +495,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
                             <div className="flex items-center gap-3">
                               <div className="text-right">
                                 <p className={`text-sm font-semibold tracking-tight ${tx.type === 'income' ? 'text-green-400' :
-                                    tx.type === 'transfer' ? 'text-blue-400' : 'text-red-400'
+                                  tx.type === 'transfer' ? 'text-blue-400' : 'text-red-400'
                                   }`}>
                                   {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '→' : '-'}{formatNative(tx.amount, tx.wallet.currency)}
                                 </p>
