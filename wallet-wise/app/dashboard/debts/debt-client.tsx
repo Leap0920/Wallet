@@ -16,9 +16,21 @@ import {
     TrendingDown,
     TrendingUp,
     History,
-    Info
+    Info,
+    Search,
+    Filter,
+    X,
+    ArrowUpDown
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatCurrency } from "@/lib/utils"
@@ -79,9 +91,30 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
         id: null,
         person: ""
     })
+    const [searchQuery, setSearchQuery] = useState("")
+    const [statusFilter, setStatusFilter] = useState("ALL")
+    const [sortBy, setSortBy] = useState<"NEWEST" | "OLDEST">("NEWEST")
 
     const lentDebts = initialDebts.filter(d => d.type === "LENT")
     const borrowedDebts = initialDebts.filter(d => d.type === "BORROWED")
+
+    const filterDebts = (debts: Debt[]) => {
+        return debts
+            .filter(d => {
+                const matchesSearch = d.person.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (d.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+                const matchesStatus = statusFilter === "ALL" || d.status === statusFilter
+                return matchesSearch && matchesStatus
+            })
+            .sort((a, b) => {
+                const dateA = new Date(a.createdAt).getTime()
+                const dateB = new Date(b.createdAt).getTime()
+                return sortBy === "NEWEST" ? dateB - dateA : dateA - dateB
+            })
+    }
+
+    const filteredLentDebts = filterDebts(lentDebts)
+    const filteredBorrowedDebts = filterDebts(borrowedDebts)
 
     const calculateTotals = (debts: Debt[]) => {
         let totalPrincipal = 0
@@ -353,11 +386,60 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
                     </Card>
                 </div>
 
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                        <Input
+                            placeholder="Search by name or description..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="bg-neutral-900 border-neutral-800 text-white pl-10 focus:ring-1 focus:ring-neutral-700 h-10"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="bg-neutral-900 border-neutral-800 text-white h-10 w-full sm:w-40">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="w-3.5 h-3.5 text-neutral-500" />
+                                    <SelectValue placeholder="Status" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent className="bg-neutral-900 border-neutral-800 text-white">
+                                <SelectItem value="ALL">All Status</SelectItem>
+                                <SelectItem value="PENDING">Pending</SelectItem>
+                                <SelectItem value="PARTIAL">Partial</SelectItem>
+                                <SelectItem value="PAID">Paid</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                            <SelectTrigger className="bg-neutral-900 border-neutral-800 text-white h-10 w-full sm:w-48">
+                                <div className="flex items-center gap-2">
+                                    <ArrowUpDown className="w-3.5 h-3.5 text-neutral-500" />
+                                    <SelectValue placeholder="Sort by" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent className="bg-neutral-900 border-neutral-800 text-white border-neutral-700">
+                                <SelectItem value="NEWEST">Newest to Oldest</SelectItem>
+                                <SelectItem value="OLDEST">Oldest to Newest</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
                 <TabsContent value="lent">
-                    <DebtList debts={lentDebts} type="LENT" />
+                    <DebtList debts={filteredLentDebts} type="LENT" />
                 </TabsContent>
                 <TabsContent value="borrowed">
-                    <DebtList debts={borrowedDebts} type="BORROWED" />
+                    <DebtList debts={filteredBorrowedDebts} type="BORROWED" />
                 </TabsContent>
             </Tabs>
 
