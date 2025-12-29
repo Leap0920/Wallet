@@ -1,19 +1,18 @@
 "use client"
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import { formatCurrency } from '@/lib/utils'
 
 interface ExpenseDonutChartProps {
   data: Array<{ name: string; value: number; color: string }>
   total: number
   showBalance: boolean
+  displayCurrency?: string
 }
 
 const COLORS = ['#3b82f6', '#f59e0b', '#6b7280', '#8b5cf6', '#22c55e', '#ef4444', '#06b6d4', '#ec4899']
 
-export function ExpenseDonutChart({ data, total, showBalance }: ExpenseDonutChartProps) {
-  const formatCurrency = (amount: number) => {
-    return `₱${Math.abs(amount).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-  }
+export function ExpenseDonutChart({ data, total, showBalance, displayCurrency = "PHP" }: ExpenseDonutChartProps) {
 
   // Assign colors to data
   const chartData = data.map((item, index) => ({
@@ -46,7 +45,7 @@ export function ExpenseDonutChart({ data, total, showBalance }: ExpenseDonutChar
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <p className="text-xs text-neutral-500">All</p>
           <p className="text-lg font-semibold text-white">
-            {showBalance ? formatCurrency(total) : "••••"}
+            {showBalance ? formatCurrency(total, displayCurrency) : "••••"}
           </p>
         </div>
       </div>

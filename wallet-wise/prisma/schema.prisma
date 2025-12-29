@@ -12,14 +12,15 @@ datasource db {
 
 // User Model - for authentication
 model User {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  name           String
-  avatarUrl      String?  // Data URL or hosted image URL for user avatar
-  backgroundUrl  String?  // Data URL or hosted image URL for profile background
-  email          String   @unique
-  password       String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  avatarUrl       String?  // Data URL or hosted image URL for user avatar
+  backgroundUrl   String?  // Data URL or hosted image URL for profile background
+  email           String   @unique
+  password        String
+  displayCurrency String   @default("PHP") // Preferred currency for viewing totals (PHP, USD, EUR, GBP, JPY)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   
   wallets        Wallet[]
   transactions   Transaction[]
@@ -43,6 +44,7 @@ model Wallet {
   name           String   // e.g., "GCash", "Maya", "Cash"
   type           String   // "e-wallet", "bank", "cash"
   balance        Float    @default(0)
+  currency       String   @default("PHP") // ISO currency code: PHP, USD, EUR, GBP, JPY
   color          String   @default("#3b82f6") // For UI color coding
   icon           String   @default("wallet") // Lucide icon name
   createdAt      DateTime @default(now())

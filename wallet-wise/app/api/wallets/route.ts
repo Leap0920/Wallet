@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { name, type, balance, color, icon } = await request.json()
+    const { name, type, balance, color, icon, currency } = await request.json()
 
     if (!name || !type) {
       return NextResponse.json({ error: "Name and type are required" }, { status: 400 })
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
         balance: balance || 0,
         color: color || "#737373",
         icon: icon || "wallet",
+        currency: currency || "PHP",
         userId: session.user.id
       }
     })

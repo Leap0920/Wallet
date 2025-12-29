@@ -1,6 +1,7 @@
 "use client"
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
+import { formatCurrency as formatCurrencyUtil } from '@/lib/utils'
 
 interface MonthlyChartProps {
   data: Array<{
@@ -10,16 +11,12 @@ interface MonthlyChartProps {
     net: number
   }>
   type?: 'bar' | 'line'
+  displayCurrency?: string
 }
 
-export function MonthlyChart({ data, type = 'bar' }: MonthlyChartProps) {
+export function MonthlyChart({ data, type = 'bar', displayCurrency = "PHP" }: MonthlyChartProps) {
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value)
+    return formatCurrencyUtil(value, displayCurrency)
   }
 
   const CustomTooltip = ({ active, payload, label }: any) => {

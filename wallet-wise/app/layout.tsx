@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "@/components/providers/session-provider";
+import { CurrencyProvider } from "@/components/providers/currency-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,7 +32,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <SessionProvider>
-          {children}
+          <CurrencyProvider>
+            {children}
+          </CurrencyProvider>
         </SessionProvider>
         <Toaster richColors position="top-right" />
       </body>

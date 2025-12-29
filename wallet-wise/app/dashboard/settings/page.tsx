@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import {
     Settings,
     Shield,
@@ -10,12 +11,20 @@ import {
     Eye,
     EyeOff,
     Loader2,
-    AlertTriangle
+    AlertTriangle,
+    Globe
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -28,19 +37,57 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { CURRENCIES } from "@/lib/utils"
+import { useCurrency } from "@/components/providers/currency-provider"
 
 export default function SettingsPage() {
     const { data: session } = useSession()
+    const router = useRouter()
+    const { displayCurrency, setDisplayCurrency } = useCurrency()
     const [isLoading, setIsLoading] = useState(false)
+    const [isSavingCurrency, setIsSavingCurrency] = useState(false)
+    const [selectedCurrency, setSelectedCurrency] = useState(displayCurrency)
     const [showCurrentPassword, setShowCurrentPassword] = useState(false)
     const [showNewPassword, setShowNewPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+    // Sync local state when displayCurrency changes
+    useEffect(() => {
+        setSelectedCurrency(displayCurrency)
+    }, [displayCurrency])
 
     const [passwordData, setPasswordData] = useState({
         currentPassword: "",
         newPassword: "",
         confirmPassword: ""
     })
+
+    const handleCurrencyChange = async (newCurrency: string) => {
+        setSelectedCurrency(newCurrency)
+        setIsSavingCurrency(true)
+        
+        try {
+            const response = await fetch("/api/user/preferences", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ displayCurrency: newCurrency }),
+            })
+
+            if (response.ok) {
+                setDisplayCurrency(newCurrency as any)
+                toast.success(`Display currency changed to ${newCurrency}`)
+                router.refresh()
+            } else {
+                throw new Error("Failed to update currency")
+            }
+        } catch (error) {
+            toast.error("Failed to update display currency")
+            setSelectedCurrency(displayCurrency) // Revert on error
+        } finally {
+            setIsSavingCurrency(false)
+        }
+    }
+
     const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPasswordData({ ...passwordData, [e.target.name]: e.target.value })
     }
@@ -114,6 +161,51 @@ export default function SettingsPage() {
                 <h1 className="text-2xl font-bold text-white">Settings</h1>
                 <p className="text-neutral-400">Manage your account preferences and security</p>
             </div>
+
+            {/* Currency Preferences */}
+            <Card className="bg-neutral-900 border-neutral-800">
+                <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                        <Globe className="w-5 h-5" />
+                        Display Currency
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div>
+                        <p className="text-sm text-neutral-400 mb-4">
+                            Choose your preferred currency for viewing balances and totals. 
+                            All amounts will be converted using real-time exchange rates.
+                        </p>
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1 max-w-xs">
+                                <Select 
+                                    value={selectedCurrency} 
+                                    onValueChange={handleCurrencyChange}
+                                    disabled={isSavingCurrency}
+                                >
+                                    <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white">
+                                        <SelectValue placeholder="Select currency" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-neutral-800 border-neutral-700">
+                                        {CURRENCIES.map((currency) => (
+                                            <SelectItem 
+                                                key={currency.code} 
+                                                value={currency.code} 
+                                                className="text-white focus:bg-neutral-700"
+                                            >
+                                                {currency.symbol} {currency.code} - {currency.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {isSavingCurrency && (
+                                <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Security Settings */}
             <Card className="bg-neutral-900 border-neutral-800">

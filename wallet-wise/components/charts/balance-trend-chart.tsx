@@ -1,18 +1,22 @@
 "use client"
 
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { formatCurrency, getCurrency } from '@/lib/utils'
 
 interface BalanceTrendChartProps {
   data: Array<{ date: string; balance: number }>
   showBalance: boolean
+  displayCurrency?: string
 }
 
-export function BalanceTrendChart({ data, showBalance }: BalanceTrendChartProps) {
-  const formatCurrency = (value: number) => {
+export function BalanceTrendChart({ data, showBalance, displayCurrency = "PHP" }: BalanceTrendChartProps) {
+  const currencySymbol = getCurrency(displayCurrency).symbol
+  
+  const formatAxisValue = (value: number) => {
     if (value >= 1000) {
-      return `${(value / 1000).toFixed(1)}k`
+      return `${currencySymbol}${(value / 1000).toFixed(1)}k`
     }
-    return value.toString()
+    return `${currencySymbol}${value}`
   }
 
   if (data.length === 0) {
@@ -55,7 +59,7 @@ export function BalanceTrendChart({ data, showBalance }: BalanceTrendChartProps)
             fontSize={10}
             tickLine={false}
             axisLine={false}
-            tickFormatter={formatCurrency}
+            tickFormatter={formatAxisValue}
             domain={[minBalance - padding, maxBalance + padding]}
             width={40}
           />
@@ -68,7 +72,7 @@ export function BalanceTrendChart({ data, showBalance }: BalanceTrendChartProps)
             }}
             labelStyle={{ color: '#a3a3a3' }}
             formatter={(value) => [
-              showBalance ? `₱${Number(value).toLocaleString()}` : '••••',
+              showBalance ? formatCurrency(Number(value), displayCurrency) : '••••',
               'Balance'
             ]}
           />

@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
+import { useCurrency } from "@/components/providers/currency-provider"
 
 interface AddWalletDialogProps {
   open: boolean
@@ -43,6 +44,7 @@ const WALLET_PRESETS = [
 ]
 
 export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDialogProps) {
+  const { displayCurrency } = useCurrency()
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -80,7 +82,8 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
         },
         body: JSON.stringify({
           ...formData,
-          balance: parseFloat(formData.balance) || 0
+          balance: parseFloat(formData.balance) || 0,
+          currency: displayCurrency // Use user's display currency
         })
       })
 

@@ -5,6 +5,8 @@ import { TrendingUp, TrendingDown, BarChart3, Calendar } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MonthlyChart } from "@/components/charts/monthly-chart"
+import { formatCurrency } from "@/lib/utils"
+import { useCurrency } from "@/components/providers/currency-provider"
 
 interface AnalyticsData {
   monthlyData: Array<{
@@ -28,13 +30,7 @@ interface AnalyticsClientProps {
 
 export function AnalyticsClient({ data }: AnalyticsClientProps) {
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar')
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP'
-    }).format(amount)
-  }
+  const { displayCurrency } = useCurrency()
 
   const netIncome = data.totalIncome - data.totalExpenses
   const savingsRate = data.totalIncome > 0 ? (netIncome / data.totalIncome) * 100 : 0
@@ -57,7 +53,7 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-semibold text-white">{formatCurrency(data.totalIncome)}</div>
+            <div className="text-xl font-semibold text-white">{formatCurrency(data.totalIncome, displayCurrency)}</div>
             <p className="text-xs text-neutral-500">Last 6 months</p>
           </CardContent>
         </Card>
@@ -70,7 +66,7 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-semibold text-white">{formatCurrency(data.totalExpenses)}</div>
+            <div className="text-xl font-semibold text-white">{formatCurrency(data.totalExpenses, displayCurrency)}</div>
             <p className="text-xs text-neutral-500">Last 6 months</p>
           </CardContent>
         </Card>
@@ -84,7 +80,7 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
           </CardHeader>
           <CardContent>
             <div className={`text-xl font-semibold ${netIncome >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {formatCurrency(netIncome)}
+              {formatCurrency(netIncome, displayCurrency)}
             </div>
             <p className="text-xs text-neutral-500">{netIncome >= 0 ? 'Positive' : 'Negative'}</p>
           </CardContent>
@@ -116,7 +112,7 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
         </CardHeader>
         <CardContent>
           {data.monthlyData.length > 0 ? (
-            <MonthlyChart data={data.monthlyData} type={chartType} />
+            <MonthlyChart data={data.monthlyData} type={chartType} displayCurrency={displayCurrency} />
           ) : (
             <div className="flex items-center justify-center h-[300px] text-neutral-500">
               <div className="text-center">
@@ -142,7 +138,7 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
                   <div key={category.name} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-neutral-300 capitalize">{category.name}</span>
-                      <span className="text-white font-medium">{formatCurrency(category.value)}</span>
+                      <span className="text-white font-medium">{formatCurrency(category.value, displayCurrency)}</span>
                     </div>
                     <div className="w-full bg-neutral-800 rounded-full h-1.5">
                       <div 

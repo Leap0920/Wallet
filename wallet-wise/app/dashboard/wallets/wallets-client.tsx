@@ -6,6 +6,7 @@ import { Plus, Settings, Eye, EyeOff, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AddWalletDialog } from "@/components/dialogs/add-wallet-dialog"
 import { toast } from "sonner"
+import { useCurrency } from "@/components/providers/currency-provider"
 
 interface WalletData {
   id: string
@@ -14,6 +15,7 @@ interface WalletData {
   balance: number
   color: string
   icon: string
+  currency: string
   createdAt: Date
   updatedAt: Date
 }
@@ -46,13 +48,10 @@ function getWalletColor(wallet: WalletData): string {
 
 export function WalletsClient({ wallets }: WalletsClientProps) {
   const router = useRouter()
+  const { formatAmount } = useCurrency()
   const [showBalances, setShowBalances] = useState(true)
   const [showAddWallet, setShowAddWallet] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-
-  const formatCurrency = (amount: number) => {
-    return `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -111,9 +110,11 @@ export function WalletsClient({ wallets }: WalletsClientProps) {
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
-            <p className="text-white/90 font-medium text-sm mb-1">{wallet.name}</p>
+            <div className="flex items-center gap-1 mb-1">
+              <p className="text-white/90 font-medium text-sm">{wallet.name}</p>
+            </div>
             <p className="text-white font-bold text-lg">
-              {showBalances ? formatCurrency(wallet.balance) : "••••••"}
+              {showBalances ? formatAmount(wallet.balance, wallet.currency) : "••••••"}
             </p>
           </div>
         ))}

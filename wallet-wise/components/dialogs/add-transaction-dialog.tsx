@@ -24,6 +24,7 @@ interface Wallet {
   id: string
   name: string
   type: string
+  currency: string
 }
 
 interface AddTransactionDialogProps {
@@ -94,7 +95,6 @@ export function AddTransactionDialog({ open, onOpenChange, wallets, onSuccess }:
 
       if (!res.ok) throw new Error("Failed to create transaction")
 
-      // Wait for the response to ensure the transaction is fully saved
       await res.json()
 
       toast.success(formData.type === "transfer" ? "Transfer completed" : "Transaction added")

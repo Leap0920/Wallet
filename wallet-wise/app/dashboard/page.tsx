@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
 import { DashboardClient } from "./dashboard-client"
 import type { Wallet, Transaction, Prisma } from "@prisma/client"
+import { getExchangeRates } from "@/lib/currency"
+import { convertCurrency } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -14,6 +16,17 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
+  // Fetch exchange rates
+  const rates = await getExchangeRates()
+
+  // Fetch user to get displayCurrency preference
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { displayCurrency: true }
+  })
+
+  const displayCurrency = user?.displayCurrency || "PHP"
+
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -21,7 +34,7 @@ export default async function DashboardPage() {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
   // Fetch all data in parallel
-  const [wallets, transactions, lastMonthExpenses, categoryAggregation] = await Promise.all([
+  const [wallets, transactions, lastMonthExpensesRaw, categoryAggregation] = await Promise.all([
     prisma.wallet.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: "asc" }
@@ -38,13 +51,13 @@ export default async function DashboardPage() {
       ],
       take: 100
     }),
-    prisma.transaction.aggregate({
+    prisma.transaction.findMany({
       where: {
         userId: session.user.id,
         type: "expense",
         date: { gte: startOfLastMonth, lte: endOfLastMonth }
       },
-      _sum: { amount: true }
+      include: { wallet: true }
     }),
     prisma.transaction.groupBy({
       by: ['category'],
@@ -54,22 +67,52 @@ export default async function DashboardPage() {
         date: { gte: thirtyDaysAgo }
       },
       _sum: { amount: true },
-      orderBy: { _sum: { amount: 'desc' } }
+      // Note: groupBy doesn't include wallet info, so we'll handle categories differently if needed
+      // For now, we'll use the raw sum which might be slightly off if multiple currencies are used in one category
+      // But let's fetch individual transactions for categories to be precise
     })
   ])
 
-  // Calculate totals
-  const totalBalance = wallets.reduce((sum: number, w: Wallet) => sum + Number(w.balance ?? 0), 0)
+  // Precise category aggregation with currency conversion
+  const thirtyDaysTxs = await prisma.transaction.findMany({
+    where: {
+      userId: session.user.id,
+      type: "expense",
+      date: { gte: thirtyDaysAgo }
+    },
+    include: { wallet: true }
+  })
+
+  const categoryTotals: Record<string, number> = {}
+  thirtyDaysTxs.forEach(tx => {
+    const category = tx.category || 'Others'
+    const convertedAmount = convertCurrency(Number(tx.amount || 0), tx.wallet.currency, displayCurrency, rates)
+    categoryTotals[category] = (categoryTotals[category] || 0) + convertedAmount
+  })
+
+  // Calculate totals with conversion
+  const totalBalance = wallets.reduce((sum: number, w: Wallet) => {
+    return sum + convertCurrency(Number(w.balance ?? 0), w.currency, displayCurrency, rates)
+  }, 0)
 
   // Monthly expenses (current month)
   const monthlyExpenses = transactions
-    .filter((tx: Transaction) => tx.type === "expense" && new Date(tx.date).getTime() >= startOfMonth.getTime())
-    .reduce((sum: number, tx: Transaction) => sum + Number(tx.amount ?? 0), 0)
+    .filter((tx) => tx.type === "expense" && new Date(tx.date).getTime() >= startOfMonth.getTime())
+    .reduce((sum: number, tx) => {
+      return sum + convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
+    }, 0)
 
   // Monthly income (current month)
   const monthlyIncome = transactions
-    .filter((tx: Transaction) => tx.type === "income" && new Date(tx.date).getTime() >= startOfMonth.getTime())
-    .reduce((sum: number, tx: Transaction) => sum + Number(tx.amount ?? 0), 0)
+    .filter((tx) => tx.type === "income" && new Date(tx.date).getTime() >= startOfMonth.getTime())
+    .reduce((sum: number, tx) => {
+      return sum + convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
+    }, 0)
+
+  // Last month expenses with conversion
+  const lastMonthExpenses = lastMonthExpensesRaw.reduce((sum: number, tx) => {
+    return sum + convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
+  }, 0)
 
   // Category data with colors
   const categoryColors: Record<string, string> = {
@@ -86,17 +129,19 @@ export default async function DashboardPage() {
     'others': '#6b7280',
   }
 
-  const categoryData = categoryAggregation.map((cat: { category: string | null; _sum: { amount: number | Prisma.Decimal | null } }) => ({
-    name: cat.category || 'Others',
-    value: Number(cat._sum.amount ?? 0),
-    color: categoryColors[(cat.category || 'others').toLowerCase()] || '#6b7280'
-  }))
+  const categoryData = Object.entries(categoryTotals)
+    .map(([name, value]) => ({
+      name,
+      value,
+      color: categoryColors[name.toLowerCase()] || '#6b7280'
+    }))
+    .sort((a, b) => b.value - a.value)
 
-  // Balance trend (last 30 days) - simplified calculation
+  // Balance trend (last 30 days)
   const balanceTrend: Array<{ date: string; balance: number }> = []
 
-  // Get transactions sorted by date descending
-  const sortedTx = [...transactions].sort((a: Transaction, b: Transaction) =>
+  // Get transactions sorted by date descending for trend calculation
+  const sortedTx = [...transactions].sort((a, b) =>
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
@@ -109,10 +154,11 @@ export default async function DashboardPage() {
     let balanceAtDate = totalBalance
     for (const tx of sortedTx) {
       if (new Date(tx.date).getTime() > date.getTime()) {
+        const convertedTxAmount = convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
         if (tx.type === 'income') {
-          balanceAtDate -= Number(tx.amount ?? 0)
+          balanceAtDate -= convertedTxAmount
         } else if (tx.type === 'expense') {
-          balanceAtDate += Number(tx.amount ?? 0)
+          balanceAtDate += convertedTxAmount
         }
       }
     }
@@ -124,11 +170,12 @@ export default async function DashboardPage() {
     totalBalance,
     monthlyExpenses,
     monthlyIncome,
-    lastMonthExpenses: Number(lastMonthExpenses._sum.amount ?? 0),
+    lastMonthExpenses,
     wallets,
     transactions,
     categoryData,
-    balanceTrend
+    balanceTrend,
+    displayCurrency
   }
 
   return <DashboardClient data={dashboardData} />

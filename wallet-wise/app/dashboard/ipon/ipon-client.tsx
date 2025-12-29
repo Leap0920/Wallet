@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { AddIponDialog } from "@/components/dialogs/add-ipon-dialog"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { toast } from "sonner"
+import { formatCurrency } from "@/lib/utils"
+import { useCurrency } from "@/components/providers/currency-provider"
 
 interface Denomination {
   denom: number
@@ -32,6 +34,7 @@ interface IponClientProps {
 
 export function IponClient({ goals }: IponClientProps) {
   const router = useRouter()
+  const { displayCurrency } = useCurrency()
   const [showAddGoal, setShowAddGoal] = useState(false)
   const [editingGoal, setEditingGoal] = useState<IponGoal | null>(null)
   const [expandedGoal, setExpandedGoal] = useState<string | null>(null)
@@ -41,14 +44,6 @@ export function IponClient({ goals }: IponClientProps) {
     goalId: null,
     goalName: ""
   })
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
 
   const handleDeleteClick = (id: string, name: string) => {
     setDeleteConfirm({ open: true, goalId: id, goalName: name })
@@ -173,7 +168,7 @@ export function IponClient({ goals }: IponClientProps) {
                     >
                       <h3 className="font-medium text-white text-lg">{goal.name}</h3>
                       <p className="text-sm text-neutral-500">
-                        {formatCurrency(goal.currentAmount)} of {formatCurrency(goal.targetAmount)}
+                        {formatCurrency(goal.currentAmount, displayCurrency)} of {formatCurrency(goal.targetAmount, displayCurrency)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -323,7 +318,7 @@ export function IponClient({ goals }: IponClientProps) {
                     </div>
                     <div>
                       <h3 className="font-medium text-white">{goal.name}</h3>
-                      <p className="text-sm text-neutral-500">{formatCurrency(goal.targetAmount)}</p>
+                      <p className="text-sm text-neutral-500">{formatCurrency(goal.targetAmount, displayCurrency)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

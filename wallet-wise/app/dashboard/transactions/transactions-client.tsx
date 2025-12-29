@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AddTransactionDialog } from "@/components/dialogs/add-transaction-dialog"
 import { toast } from "sonner"
+import { useCurrency } from "@/components/providers/currency-provider"
 
 interface Transaction {
   id: string
@@ -18,6 +19,7 @@ interface Transaction {
   wallet: {
     id: string
     name: string
+    currency: string
   }
 }
 
@@ -25,6 +27,7 @@ interface Wallet {
   id: string
   name: string
   type: string
+  currency: string
 }
 
 interface TransactionsClientProps {
@@ -34,16 +37,10 @@ interface TransactionsClientProps {
 
 export function TransactionsClient({ transactions, wallets }: TransactionsClientProps) {
   const router = useRouter()
+  const { formatAmount } = useCurrency()
   const [showAddTransaction, setShowAddTransaction] = useState(false)
   const [filter, setFilter] = useState<"all" | "income" | "expense">("all")
   const [deletingId, setDeletingId] = useState<string | null>(null)
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP'
-    }).format(amount)
-  }
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -155,7 +152,7 @@ export function TransactionsClient({ transactions, wallets }: TransactionsClient
                         <p className={`font-medium ${
                           tx.type === 'income' ? 'text-green-500' : 'text-red-500'
                         }`}>
-                          {tx.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
+                          {tx.type === 'income' ? '+' : '-'}{formatAmount(Math.abs(tx.amount), tx.wallet.currency)}
                         </p>
                         <Button
                           variant="ghost"
