@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { DebtClient } from "./debt-client"
+import { DebtClient } from "@/app/dashboard/debts/debt-client"
 
 export const metadata = {
     title: "Debts - WalletWise",

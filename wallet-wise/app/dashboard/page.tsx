@@ -91,20 +91,20 @@ export default async function DashboardPage() {
   })
 
   // Calculate totals with conversion
-  const totalBalance = wallets.reduce((sum: number, w: Wallet) => {
+  const totalBalance = wallets.reduce((sum: number, w: any) => {
     return sum + convertCurrency(Number(w.balance ?? 0), w.currency, displayCurrency, rates)
   }, 0)
 
   // Monthly expenses (current month)
   const monthlyExpenses = transactions
-    .filter((tx) => tx.type === "expense" && new Date(tx.date).getTime() >= startOfMonth.getTime())
+    .filter((tx: any) => tx.type === "expense" && new Date(tx.date).getTime() >= startOfMonth.getTime())
     .reduce((sum: number, tx: any) => {
       return sum + convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
     }, 0)
 
   // Monthly income (current month)
   const monthlyIncome = transactions
-    .filter((tx) => tx.type === "income" && new Date(tx.date).getTime() >= startOfMonth.getTime())
+    .filter((tx: any) => tx.type === "income" && new Date(tx.date).getTime() >= startOfMonth.getTime())
     .reduce((sum: number, tx: any) => {
       return sum + convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
     }, 0)

@@ -88,10 +88,10 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
         let totalInterest = 0
         let totalPaid = 0
 
-        debts.forEach(d => {
+        debts.forEach((d: Debt) => {
             totalPrincipal += d.amount
             totalInterest += d.interest || 0
-            totalPaid += d.payments.reduce((acc, p) => acc + p.amount, 0)
+            totalPaid += d.payments.reduce((acc: number, p: Payment) => acc + p.amount, 0)
         })
 
         return { totalPrincipal, totalInterest, totalPaid, totalRemaining: (totalPrincipal + totalInterest) - totalPaid }
@@ -124,9 +124,9 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
                     </CardContent>
                 </Card>
             ) : (
-                debts.map((debt) => {
+                debts.map((debt: Debt) => {
                     const totalToPay = debt.amount + (debt.interest || 0)
-                    const paid = debt.payments.reduce((acc, p) => acc + p.amount, 0)
+                    const paid = debt.payments.reduce((acc: number, p: Payment) => acc + p.amount, 0)
                     const remaining = totalToPay - paid
                     const progress = (paid / totalToPay) * 100
 
