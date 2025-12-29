@@ -51,6 +51,7 @@ export async function POST(request: Request) {
         const result = await sendVerificationCode(email, code)
 
         if (!result.success) {
+            console.error('[forgot-password] Email send failed:', JSON.stringify(result, null, 2))
             const devMode = process.env.PASSWORD_RESET_DEV_MODE === 'true' || process.env.NODE_ENV !== 'production'
             console.error('Failed to send verification email:', result.error)
 
@@ -75,7 +76,10 @@ export async function POST(request: Request) {
             message: 'Verification code sent to your email.',
         })
     } catch (error) {
-        console.error('Forgot password error:', error)
+        console.error('[forgot-password] Unexpected error:', {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+        })
         return NextResponse.json(
             { error: 'Something went wrong. Please try again.' },
             { status: 500 }

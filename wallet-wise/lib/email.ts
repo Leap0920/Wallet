@@ -58,14 +58,21 @@ export async function sendVerificationCode(email: string, code: string) {
     })
 
     if (error) {
-      console.error('Resend error:', error)
+      console.error('[email.sendVerificationCode] Resend error:', {
+        message: error.message || String(error),
+        statusCode: (error as any).statusCode,
+        details: error,
+      })
       return { success: false, error: error.message }
     }
 
     console.log('Email sent successfully:', data)
     return { success: true, data }
   } catch (error) {
-    console.error('Failed to send email:', error)
+    console.error('[email.sendVerificationCode] Catch block error:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     return { success: false, error: 'Failed to send email' }
   }
 }
