@@ -3,12 +3,12 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function sendVerificationCode(email: string, code: string) {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: 'WalletWise <onboarding@resend.dev>',
-      to: email,
-      subject: 'Your Password Reset Code - WalletWise',
-      html: `
+    try {
+        const { data, error } = await resend.emails.send({
+            from: 'WalletWise <onboarding@resend.dev>',
+            to: email,
+            subject: 'Your Password Reset Code - WalletWise',
+            html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #0a0a0a;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #ffffff; margin: 0; font-size: 28px;">💰 WalletWise</h1>
@@ -43,17 +43,17 @@ export async function sendVerificationCode(email: string, code: string) {
           </div>
         </div>
       `,
-    })
+        })
 
-    if (error) {
-      console.error('Resend error:', error)
-      return { success: false, error: error.message }
+        if (error) {
+            console.error('Resend error:', error)
+            return { success: false, error: error.message }
+        }
+
+        console.log('Email sent successfully:', data)
+        return { success: true, data }
+    } catch (error) {
+        console.error('Failed to send email:', error)
+        return { success: false, error: 'Failed to send email' }
     }
-
-    console.log('Email sent successfully:', data)
-    return { success: true, data }
-  } catch (error) {
-    console.error('Failed to send email:', error)
-    return { success: false, error: 'Failed to send email' }
-  }
 }
