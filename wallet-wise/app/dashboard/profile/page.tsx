@@ -210,47 +210,75 @@ export default function ProfilePage() {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
-            {/* Background banner */}
-            <div className="rounded-md overflow-hidden">
+            {/* Premium Profile Header Card */}
+            <div className="relative rounded-[2rem] overflow-hidden bg-neutral-900 border border-neutral-800 shadow-2xl">
+                {/* Background banner */}
                 <div
-                    className="w-full h-40 bg-neutral-800 flex items-end p-4"
+                    className="w-full h-48 md:h-64 bg-neutral-800 relative group"
                     style={{ backgroundImage: backgroundPreview ? `url(${backgroundPreview})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}
                 >
-                    <div className="flex items-center space-x-4 bg-black/40 p-2 rounded">
-                        <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent opacity-60" />
+                    {isEditing && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="absolute top-4 right-4 bg-black/50 border-none text-white hover:bg-black/70 backdrop-blur-md rounded-xl"
+                            onClick={() => backgroundInputRef.current?.click()}
+                        >
+                            Change Background
+                        </Button>
+                    )}
+                </div>
+
+                <div className="px-6 pb-8 md:px-10 -mt-12 md:-mt-16 relative flex flex-col md:flex-row items-center md:items-end gap-6">
+                    <div className="relative shrink-0">
+                        <div className="p-1.5 bg-neutral-900 rounded-full shadow-2xl">
                             {avatarPreview ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={avatarPreview} alt="avatar" className="w-20 h-20 rounded-full object-cover border-2 border-neutral-700" />
+                                <img
+                                    src={avatarPreview}
+                                    alt="avatar"
+                                    className="w-28 h-28 md:w-36 md:h-36 rounded-full object-cover border-4 border-neutral-800 shadow-xl"
+                                />
                             ) : (
-                                <Avatar className="w-20 h-20">
-                                    <AvatarFallback className="bg-neutral-700 text-white text-2xl">
+                                <Avatar className="w-28 h-28 md:w-36 md:h-36 border-4 border-neutral-800">
+                                    <AvatarFallback className="bg-neutral-800 text-white text-4xl">
                                         {session.user.name?.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
                             )}
                         </div>
-                        <div className="text-white">
-                            <div className="text-lg font-semibold">{session.user.name}</div>
-                            <div className="text-sm text-neutral-300">{session.user.email}</div>
-                        </div>
+                        {isEditing && (
+                            <button
+                                onClick={() => avatarInputRef.current?.click()}
+                                className="absolute bottom-2 right-2 p-2.5 bg-blue-600 rounded-full text-white hover:bg-blue-500 shadow-lg transition-all hover:scale-110 active:scale-95 z-10"
+                            >
+                                <Edit3 className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
+
+                    <div className="flex-1 text-center md:text-left space-y-1 mb-2">
+                        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">{session.user.name}</h2>
+                        <p className="text-neutral-400 font-medium text-sm flex items-center justify-center md:justify-start gap-2">
+                            <Mail className="w-4 h-4 text-neutral-500" />
+                            {session.user.email}
+                        </p>
+                    </div>
+
+                    {!isEditing && (
+                        <div className="pb-2">
+                            <Button
+                                onClick={() => setIsEditing(true)}
+                                variant="outline"
+                                className="rounded-2xl border-neutral-800 bg-neutral-900/50 backdrop-blur-md text-neutral-300 hover:text-white hover:bg-neutral-800 px-8 h-12 font-bold transition-all hover:scale-105 active:scale-95"
+                            >
+                                <Edit3 className="w-4 h-4 mr-2" />
+                                Edit Profile
+                            </Button>
+                        </div>
+                    )}
                 </div>
-            </div>
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-white">Profile</h1>
-                    <p className="text-neutral-400">Manage your account information</p>
-                </div>
-                {!isEditing && (
-                    <Button
-                        onClick={() => setIsEditing(true)}
-                        variant="outline"
-                        className="border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white"
-                    >
-                        <Edit3 className="w-4 h-4 mr-2" />
-                        Edit Profile
-                    </Button>
-                )}
             </div>
 
             <Card className="bg-neutral-900 border-neutral-800">
