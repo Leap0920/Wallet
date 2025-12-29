@@ -4,23 +4,24 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { 
-  Wallet, 
-  PiggyBank, 
-  Menu, 
-  LogOut, 
+import {
+  Wallet,
+  PiggyBank,
+  Menu,
+  LogOut,
   User,
   Home,
-  Settings
+  Settings,
+  HandCoins
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
@@ -36,6 +37,7 @@ interface DashboardLayoutProps {
 const navigation = [
   { name: "Home", href: "/dashboard", icon: Home },
   { name: "Ipon Challenge", href: "/dashboard/ipon", icon: PiggyBank },
+  { name: "Debt", href: "/dashboard/debts", icon: HandCoins },
   { name: "Profile", href: "/dashboard/profile", icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
@@ -54,8 +56,8 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
             href={item.href}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-              isActive 
-                ? "bg-neutral-800 text-white" 
+              isActive
+                ? "bg-neutral-800 text-white"
                 : "text-neutral-400 hover:text-white hover:bg-neutral-800/50"
             )}
             onClick={onNavigate}
@@ -159,7 +161,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-neutral-800" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="text-red-400 focus:bg-neutral-800 focus:text-red-400 cursor-pointer"
                   onClick={() => signOut({ callbackUrl: "/" })}
                 >
