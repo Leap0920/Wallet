@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if source wallet has sufficient balance
-      const sourceWallet = wallets.find(w => w.id === fromWalletId)
+      const sourceWallet = wallets.find((w: any) => w.id === fromWalletId)
       if (sourceWallet && sourceWallet.balance < (parsedAmount + parsedTransferFee)) {
         return NextResponse.json({ error: "Insufficient balance in source wallet" }, { status: 400 })
       }
@@ -147,9 +147,9 @@ export async function POST(request: NextRequest) {
         data: {
           type: "transfer",
           amount: parsedAmount,
-          description: description || `Transfer from ${sourceWallet?.name} to ${wallets.find(w => w.id === toWalletId)?.name}`,
+          description: description || `Transfer from ${sourceWallet?.name || "Unknown"} to ${wallets.find((w: any) => w.id === toWalletId)?.name || "Unknown"}`,
           category: "Transfer",
-          walletId: fromWalletId, // Primary wallet for the transaction record
+          walletId: fromWalletId,
           fromWalletId,
           toWalletId,
           transferFee: parsedTransferFee > 0 ? parsedTransferFee : null,
