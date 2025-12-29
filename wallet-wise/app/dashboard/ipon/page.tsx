@@ -16,7 +16,7 @@ export default async function IponPage() {
   })
 
   // Transform the data to match the expected type
-  const goals = goalsData.map(goal => ({
+  const goals = goalsData.map((goal: any) => ({
     ...goal,
     denominations: goal.denominations as Array<{ denom: number; required: number; checked: number }> | null
   }))
