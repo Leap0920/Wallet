@@ -33,8 +33,8 @@ export function BalanceTrendChart({ data, showBalance }: BalanceTrendChartProps)
   const padding = (maxBalance - minBalance) * 0.1 || 1000
 
   return (
-    <div className="h-32">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-32" style={{ minHeight: 128 }}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={1}>
         <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
           <defs>
             <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">

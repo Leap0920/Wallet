@@ -215,63 +215,83 @@ export function IponClient({ goals }: IponClientProps) {
                       <p className="text-xs text-neutral-500 pt-2 border-t border-neutral-800">
                         Tap + to add a bill, - to undo:
                       </p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {denoms.map((d, idx) => (
-                          <div
-                            key={`${d.denom}-${idx}`}
-                            className={`p-3 rounded-lg border transition-all ${
-                              d.checked === d.required
-                                ? 'bg-green-500/10 border-green-500/30'
-                                : d.checked > 0
-                                ? 'bg-neutral-800 border-neutral-600'
-                                : 'bg-neutral-800/50 border-neutral-700'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-lg font-medium text-white">₱{d.denom}</span>
-                              {d.checked === d.required && (
-                                <Check className="w-4 h-4 text-green-500" />
-                              )}
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {denoms.map((d, idx) => {
+                          const maxDots = 8
+                          const showDots = d.required <= maxDots
+                          const progressPercent = d.required > 0 ? (d.checked / d.required) * 100 : 0
+                          
+                          return (
+                            <div
+                              key={`${d.denom}-${idx}`}
+                              className={`p-3 rounded-xl border transition-all ${
+                                d.checked === d.required
+                                  ? 'bg-green-500/10 border-green-500/30'
+                                  : d.checked > 0
+                                  ? 'bg-neutral-800 border-neutral-600'
+                                  : 'bg-neutral-800/50 border-neutral-700'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xl font-semibold text-white">₱{d.denom}</span>
+                                {d.checked === d.required && (
+                                  <Check className="w-5 h-5 text-green-500" />
+                                )}
+                              </div>
+                              
+                              {/* Progress indicator */}
+                              <div className="mb-3">
+                                {showDots ? (
+                                  <div className="flex items-center flex-wrap gap-1">
+                                    {Array.from({ length: d.required }).map((_, i) => (
+                                      <div
+                                        key={i}
+                                        className={`w-2 h-2 rounded-full transition-colors ${
+                                          i < d.checked ? 'bg-green-500' : 'bg-neutral-600'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="w-full bg-neutral-700 rounded-full h-1.5">
+                                    <div 
+                                      className="bg-green-500 h-1.5 rounded-full transition-all"
+                                      style={{ width: `${progressPercent}%` }}
+                                    />
+                                  </div>
+                                )}
+                                <span className="text-xs text-neutral-500 mt-1 block">
+                                  {d.checked}/{d.required}
+                                </span>
+                              </div>
+                              
+                              <div className="flex flex-col sm:flex-row items-stretch gap-1.5">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleToggleDenom(goal.id, idx, denoms, 'remove')}
+                                  disabled={updating === goal.id || d.checked === 0}
+                                  className="flex-1 h-9 px-2 text-[11px] sm:text-xs border-neutral-600 text-neutral-400 hover:text-white hover:bg-neutral-700 disabled:opacity-30"
+                                >
+                                  <Undo2 className="w-3 h-3 sm:mr-1 shrink-0" />
+                                  <span className="hidden sm:inline">Undo</span>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleToggleDenom(goal.id, idx, denoms, 'add')}
+                                  disabled={updating === goal.id || d.checked >= d.required}
+                                  className="flex-1 h-9 px-2 text-[11px] sm:text-xs border-green-600 text-green-400 hover:text-white hover:bg-green-600 disabled:opacity-30"
+                                >
+                                  <Plus className="w-3 h-3 sm:mr-1 shrink-0" />
+                                  <span className="hidden sm:inline">Add</span>
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1 mb-2">
-                              {Array.from({ length: d.required }).map((_, i) => (
-                                <div
-                                  key={i}
-                                  className={`w-2 h-2 rounded-full ${
-                                    i < d.checked ? 'bg-green-500' : 'bg-neutral-600'
-                                  }`}
-                                />
-                              ))}
-                              <span className="text-xs text-neutral-500 ml-1">
-                                {d.checked}/{d.required}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleToggleDenom(goal.id, idx, denoms, 'remove')}
-                                disabled={updating === goal.id || d.checked === 0}
-                                className="flex-1 h-7 text-xs border-neutral-600 text-neutral-400 hover:text-white hover:bg-neutral-700 disabled:opacity-30"
-                              >
-                                <Undo2 className="w-3 h-3 mr-1" />
-                                Undo
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleToggleDenom(goal.id, idx, denoms, 'add')}
-                                disabled={updating === goal.id || d.checked >= d.required}
-                                className="flex-1 h-7 text-xs border-green-600 text-green-400 hover:text-white hover:bg-green-600 disabled:opacity-30"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   )}

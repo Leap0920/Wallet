@@ -23,8 +23,8 @@ export function ExpenseDonutChart({ data, total, showBalance }: ExpenseDonutChar
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative w-48 h-48">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="relative w-48 h-48" style={{ minWidth: 192, minHeight: 192 }}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={1}>
           <PieChart>
             <Pie
               data={chartData}
