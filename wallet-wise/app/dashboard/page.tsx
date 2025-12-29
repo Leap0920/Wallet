@@ -84,7 +84,7 @@ export default async function DashboardPage() {
   })
 
   const categoryTotals: Record<string, number> = {}
-  thirtyDaysTxs.forEach(tx => {
+  thirtyDaysTxs.forEach((tx: any) => {
     const category = tx.category || 'Others'
     const convertedAmount = convertCurrency(Number(tx.amount || 0), tx.wallet.currency, displayCurrency, rates)
     categoryTotals[category] = (categoryTotals[category] || 0) + convertedAmount
@@ -98,19 +98,19 @@ export default async function DashboardPage() {
   // Monthly expenses (current month)
   const monthlyExpenses = transactions
     .filter((tx) => tx.type === "expense" && new Date(tx.date).getTime() >= startOfMonth.getTime())
-    .reduce((sum: number, tx) => {
+    .reduce((sum: number, tx: any) => {
       return sum + convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
     }, 0)
 
   // Monthly income (current month)
   const monthlyIncome = transactions
     .filter((tx) => tx.type === "income" && new Date(tx.date).getTime() >= startOfMonth.getTime())
-    .reduce((sum: number, tx) => {
+    .reduce((sum: number, tx: any) => {
       return sum + convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
     }, 0)
 
   // Last month expenses with conversion
-  const lastMonthExpenses = lastMonthExpensesRaw.reduce((sum: number, tx) => {
+  const lastMonthExpenses = lastMonthExpensesRaw.reduce((sum: number, tx: any) => {
     return sum + convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
   }, 0)
 
@@ -153,11 +153,12 @@ export default async function DashboardPage() {
     // Calculate balance at this point by subtracting future transactions
     let balanceAtDate = totalBalance
     for (const tx of sortedTx) {
-      if (new Date(tx.date).getTime() > date.getTime()) {
-        const convertedTxAmount = convertCurrency(Number(tx.amount ?? 0), tx.wallet.currency, displayCurrency, rates)
-        if (tx.type === 'income') {
+      const transaction = tx as any
+      if (new Date(transaction.date).getTime() > date.getTime()) {
+        const convertedTxAmount = convertCurrency(Number(transaction.amount ?? 0), transaction.wallet.currency, displayCurrency, rates)
+        if (transaction.type === 'income') {
           balanceAtDate -= convertedTxAmount
-        } else if (tx.type === 'expense') {
+        } else if (transaction.type === 'expense') {
           balanceAtDate += convertedTxAmount
         }
       }
