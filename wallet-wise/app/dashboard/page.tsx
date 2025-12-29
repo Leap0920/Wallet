@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
 import { DashboardClient } from "./dashboard-client"
+import type { Wallet, Transaction, Prisma } from "@prisma/client"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -58,17 +59,17 @@ export default async function DashboardPage() {
   ])
 
   // Calculate totals
-  const totalBalance = wallets.reduce((sum, w) => sum + w.balance, 0)
+  const totalBalance = wallets.reduce((sum: number, w: Wallet) => sum + Number(w.balance ?? 0), 0)
 
   // Monthly expenses (current month)
   const monthlyExpenses = transactions
-    .filter(tx => tx.type === "expense" && new Date(tx.date) >= startOfMonth)
-    .reduce((sum, tx) => sum + tx.amount, 0)
+    .filter((tx: Transaction) => tx.type === "expense" && new Date(tx.date).getTime() >= startOfMonth.getTime())
+    .reduce((sum: number, tx: Transaction) => sum + Number(tx.amount ?? 0), 0)
 
   // Monthly income (current month)
   const monthlyIncome = transactions
-    .filter(tx => tx.type === "income" && new Date(tx.date) >= startOfMonth)
-    .reduce((sum, tx) => sum + tx.amount, 0)
+    .filter((tx: Transaction) => tx.type === "income" && new Date(tx.date).getTime() >= startOfMonth.getTime())
+    .reduce((sum: number, tx: Transaction) => sum + Number(tx.amount ?? 0), 0)
 
   // Category data with colors
   const categoryColors: Record<string, string> = {
@@ -85,18 +86,17 @@ export default async function DashboardPage() {
     'others': '#6b7280',
   }
 
-  const categoryData = categoryAggregation.map(cat => ({
+  const categoryData = categoryAggregation.map((cat: { category: string | null; _sum: { amount: number | Prisma.Decimal | null } }) => ({
     name: cat.category || 'Others',
-    value: cat._sum.amount || 0,
+    value: Number(cat._sum.amount ?? 0),
     color: categoryColors[(cat.category || 'others').toLowerCase()] || '#6b7280'
   }))
 
   // Balance trend (last 30 days) - simplified calculation
   const balanceTrend: Array<{ date: string; balance: number }> = []
-  let runningBalance = totalBalance
 
   // Get transactions sorted by date descending
-  const sortedTx = [...transactions].sort((a, b) =>
+  const sortedTx = [...transactions].sort((a: Transaction, b: Transaction) =>
     new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
@@ -108,11 +108,11 @@ export default async function DashboardPage() {
     // Calculate balance at this point by subtracting future transactions
     let balanceAtDate = totalBalance
     for (const tx of sortedTx) {
-      if (new Date(tx.date) > date) {
+      if (new Date(tx.date).getTime() > date.getTime()) {
         if (tx.type === 'income') {
-          balanceAtDate -= tx.amount
+          balanceAtDate -= Number(tx.amount ?? 0)
         } else if (tx.type === 'expense') {
-          balanceAtDate += tx.amount
+          balanceAtDate += Number(tx.amount ?? 0)
         }
       }
     }
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
     totalBalance,
     monthlyExpenses,
     monthlyIncome,
-    lastMonthExpenses: lastMonthExpenses._sum.amount || 0,
+    lastMonthExpenses: Number(lastMonthExpenses._sum.amount ?? 0),
     wallets,
     transactions,
     categoryData,
