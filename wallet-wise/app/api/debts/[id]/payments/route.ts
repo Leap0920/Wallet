@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await auth()
     if (!session?.user?.id) {
@@ -12,14 +12,13 @@ export async function POST(
     }
 
     try {
+        const { id: debtId } = await params
         const body = await req.json()
         const { amount, date, note } = body
 
         if (!amount) {
             return new NextResponse("Missing amount", { status: 400 })
         }
-
-        const debtId = params.id
 
         // Check if debt exists and belongs to user
         const debt = await prisma.debt.findUnique({
@@ -46,7 +45,7 @@ export async function POST(
         })
 
         // Update debt status
-        const totalPaid = debt.payments.reduce((acc, p) => acc + p.amount, 0) + parseFloat(amount)
+        const totalPaid = debt.payments.reduce((acc: number, p: any) => acc + p.amount, 0) + parseFloat(amount)
         const totalToPay = debt.amount + (debt.interest || 0)
 
         let status = "PENDING"

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await auth()
     if (!session?.user?.id) {
@@ -12,12 +12,13 @@ export async function PATCH(
     }
 
     try {
+        const { id: debtId } = await params
         const body = await req.json()
         const { type, person, amount, interest, dueDate, description, status } = body
 
         const debt = await prisma.debt.update({
             where: {
-                id: params.id,
+                id: debtId,
                 userId: session.user.id
             },
             data: {
@@ -40,7 +41,7 @@ export async function PATCH(
 
 export async function DELETE(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await auth()
     if (!session?.user?.id) {
@@ -48,9 +49,10 @@ export async function DELETE(
     }
 
     try {
+        const { id: debtId } = await params
         const debt = await prisma.debt.delete({
             where: {
-                id: params.id,
+                id: debtId,
                 userId: session.user.id
             }
         })
