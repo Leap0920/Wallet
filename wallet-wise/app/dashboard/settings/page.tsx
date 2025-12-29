@@ -37,7 +37,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { CURRENCIES } from "@/lib/utils"
+import { CURRENCIES, CurrencyCode } from "@/lib/utils"
 import { useCurrency } from "@/components/providers/currency-provider"
 
 export default function SettingsPage() {
@@ -46,7 +46,7 @@ export default function SettingsPage() {
     const { displayCurrency, setDisplayCurrency } = useCurrency()
     const [isLoading, setIsLoading] = useState(false)
     const [isSavingCurrency, setIsSavingCurrency] = useState(false)
-    const [selectedCurrency, setSelectedCurrency] = useState(displayCurrency)
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(displayCurrency)
     const [showCurrentPassword, setShowCurrentPassword] = useState(false)
     const [showNewPassword, setShowNewPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -63,9 +63,10 @@ export default function SettingsPage() {
     })
 
     const handleCurrencyChange = async (newCurrency: string) => {
-        setSelectedCurrency(newCurrency)
+        const currency = newCurrency as CurrencyCode
+        setSelectedCurrency(currency)
         setIsSavingCurrency(true)
-        
+
         try {
             const response = await fetch("/api/user/preferences", {
                 method: "PATCH",
@@ -74,8 +75,8 @@ export default function SettingsPage() {
             })
 
             if (response.ok) {
-                setDisplayCurrency(newCurrency as any)
-                toast.success(`Display currency changed to ${newCurrency}`)
+                setDisplayCurrency(currency)
+                toast.success(`Display currency changed to ${currency}`)
                 router.refresh()
             } else {
                 throw new Error("Failed to update currency")
@@ -173,13 +174,13 @@ export default function SettingsPage() {
                 <CardContent className="space-y-4">
                     <div>
                         <p className="text-sm text-neutral-400 mb-4">
-                            Choose your preferred currency for viewing balances and totals. 
+                            Choose your preferred currency for viewing balances and totals.
                             All amounts will be converted using real-time exchange rates.
                         </p>
                         <div className="flex items-center gap-4">
                             <div className="flex-1 max-w-xs">
-                                <Select 
-                                    value={selectedCurrency} 
+                                <Select
+                                    value={selectedCurrency}
                                     onValueChange={handleCurrencyChange}
                                     disabled={isSavingCurrency}
                                 >
@@ -188,9 +189,9 @@ export default function SettingsPage() {
                                     </SelectTrigger>
                                     <SelectContent className="bg-neutral-800 border-neutral-700">
                                         {CURRENCIES.map((currency) => (
-                                            <SelectItem 
-                                                key={currency.code} 
-                                                value={currency.code} 
+                                            <SelectItem
+                                                key={currency.code}
+                                                value={currency.code}
                                                 className="text-white focus:bg-neutral-700"
                                             >
                                                 {currency.symbol} {currency.code} - {currency.name}
