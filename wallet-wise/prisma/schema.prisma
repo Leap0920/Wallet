@@ -24,6 +24,17 @@ model User {
   wallets        Wallet[]
   transactions   Transaction[]
   iponGoals      IponGoal[]
+  passwordReset  PasswordReset?
+}
+
+// Password Reset Model - for email verification codes
+model PasswordReset {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 // Wallet Model - GCash, Maya, Cash, PayPal, MariBank, etc.
