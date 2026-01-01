@@ -19,6 +19,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
+import { DEFAULT_CATEGORIES } from "@/lib/utils"
 
 interface Wallet {
     id: string
@@ -49,19 +50,7 @@ interface EditTransactionDialogProps {
     onSuccess: () => void
 }
 
-const CATEGORIES = [
-    "Food",
-    "Transport",
-    "Shopping",
-    "Bills",
-    "Entertainment",
-    "Health",
-    "Education",
-    "Salary",
-    "Freelance",
-    "Gift",
-    "Other"
-]
+const CATEGORIES = DEFAULT_CATEGORIES
 
 export function EditTransactionDialog({ open, onOpenChange, wallets, categories, transaction, onSuccess }: EditTransactionDialogProps) {
     const allCategories = Array.from(new Set([...CATEGORIES, ...(categories || [])]))
@@ -253,7 +242,18 @@ export function EditTransactionDialog({ open, onOpenChange, wallets, categories,
 
                             <div className="space-y-2">
                                 <Label className="text-neutral-300 text-sm">Category</Label>
-                                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                                <Select
+                                    value={formData.category}
+                                    onValueChange={(v) => {
+                                        let newType = formData.type
+                                        if (["Salary", "Freelance", "Gift"].includes(v)) {
+                                            newType = "income"
+                                        } else if (v !== "Other" && v !== "Transfer") {
+                                            newType = "expense"
+                                        }
+                                        setFormData({ ...formData, category: v, type: newType })
+                                    }}
+                                >
                                     <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white">
                                         <SelectValue placeholder="Select category" />
                                     </SelectTrigger>

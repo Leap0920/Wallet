@@ -14,7 +14,7 @@ export const CURRENCIES = [
   { code: "JPY", symbol: "¥", name: "Japanese Yen", locale: "ja-JP" },
   { code: "CNY", symbol: "¥", name: "Chinese Yuan", locale: "zh-CN" },
   { code: "CHF", symbol: "Fr", name: "Swiss Franc", locale: "de-CH" },
-  
+
   // Asia Pacific
   { code: "PHP", symbol: "₱", name: "Philippine Peso", locale: "en-PH" },
   { code: "SGD", symbol: "S$", name: "Singapore Dollar", locale: "en-SG" },
@@ -30,7 +30,7 @@ export const CURRENCIES = [
   { code: "BDT", symbol: "৳", name: "Bangladeshi Taka", locale: "bn-BD" },
   { code: "AUD", symbol: "A$", name: "Australian Dollar", locale: "en-AU" },
   { code: "NZD", symbol: "NZ$", name: "New Zealand Dollar", locale: "en-NZ" },
-  
+
   // Americas
   { code: "CAD", symbol: "C$", name: "Canadian Dollar", locale: "en-CA" },
   { code: "MXN", symbol: "MX$", name: "Mexican Peso", locale: "es-MX" },
@@ -39,7 +39,7 @@ export const CURRENCIES = [
   { code: "CLP", symbol: "$", name: "Chilean Peso", locale: "es-CL" },
   { code: "COP", symbol: "$", name: "Colombian Peso", locale: "es-CO" },
   { code: "PEN", symbol: "S/", name: "Peruvian Sol", locale: "es-PE" },
-  
+
   // Europe
   { code: "SEK", symbol: "kr", name: "Swedish Krona", locale: "sv-SE" },
   { code: "NOK", symbol: "kr", name: "Norwegian Krone", locale: "nb-NO" },
@@ -51,7 +51,7 @@ export const CURRENCIES = [
   { code: "TRY", symbol: "₺", name: "Turkish Lira", locale: "tr-TR" },
   { code: "RUB", symbol: "₽", name: "Russian Ruble", locale: "ru-RU" },
   { code: "UAH", symbol: "₴", name: "Ukrainian Hryvnia", locale: "uk-UA" },
-  
+
   // Middle East & Africa
   { code: "AED", symbol: "د.إ", name: "UAE Dirham", locale: "ar-AE" },
   { code: "SAR", symbol: "﷼", name: "Saudi Riyal", locale: "ar-SA" },
@@ -64,7 +64,7 @@ export const CURRENCIES = [
   { code: "ZAR", symbol: "R", name: "South African Rand", locale: "en-ZA" },
   { code: "NGN", symbol: "₦", name: "Nigerian Naira", locale: "en-NG" },
   { code: "KES", symbol: "KSh", name: "Kenyan Shilling", locale: "en-KE" },
-  
+
   // Crypto (display only)
   { code: "BTC", symbol: "₿", name: "Bitcoin", locale: "en-US" },
   { code: "ETH", symbol: "Ξ", name: "Ethereum", locale: "en-US" },
@@ -101,12 +101,26 @@ export function convertCurrency(
   rates: Record<string, number>
 ): number {
   if (fromCurrency === toCurrency) return amount
-  
+
   // Rates are relative to USD (base currency)
   const fromRate = rates[fromCurrency] || 1
   const toRate = rates[toCurrency] || 1
-  
+
   // Convert: amount -> USD -> target currency
   const amountInUSD = amount / fromRate
   return amountInUSD * toRate
 }
+
+export const DEFAULT_CATEGORIES = [
+  "Food",
+  "Transport",
+  "Shopping",
+  "Bills",
+  "Entertainment",
+  "Health",
+  "Education",
+  "Salary",
+  "Freelance",
+  "Gift",
+  "Other"
+]

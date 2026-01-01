@@ -24,6 +24,7 @@ import { BalanceTrendChart } from "@/components/charts/balance-trend-chart"
 import { toast } from "sonner"
 import { useCurrency } from "@/components/providers/currency-provider"
 import { formatCurrency } from "@/lib/utils"
+import { TabsContent } from "@/components/ui/tabs"
 
 interface WalletData {
   id: string
@@ -82,16 +83,16 @@ interface DashboardClientProps {
 
 // Category icons and colors mapping
 const categoryConfig: Record<string, { icon: string; color: string; bgColor: string }> = {
-  income: { icon: "💰", color: "#22c55e", bgColor: "bg-yellow-500" },
+  income: { icon: "💰", color: "#22c55e", bgColor: "bg-green-500" },
   transfer: { icon: "🔄", color: "#3b82f6", bgColor: "bg-blue-500" },
   food: { icon: "🍔", color: "#ef4444", bgColor: "bg-red-500" },
   "food & drinks": { icon: "🍔", color: "#ef4444", bgColor: "bg-red-500" },
   transport: { icon: "🚗", color: "#8b5cf6", bgColor: "bg-purple-500" },
   transportation: { icon: "🚗", color: "#8b5cf6", bgColor: "bg-purple-500" },
   shopping: { icon: "🛒", color: "#3b82f6", bgColor: "bg-blue-500" },
-  entertainment: { icon: "🎬", color: "#22c55e", bgColor: "bg-green-500" },
-  "life & entertainment": { icon: "🎬", color: "#22c55e", bgColor: "bg-green-500" },
-  bills: { icon: "📄", color: "#f59e0b", bgColor: "bg-amber-500" },
+  entertainment: { icon: "🎬", color: "#f59e0b", bgColor: "bg-amber-500" },
+  "life & entertainment": { icon: "🎬", color: "#f59e0b", bgColor: "bg-amber-500" },
+  bills: { icon: "📄", color: "#ef4444", bgColor: "bg-red-500" },
   streaming: { icon: "📺", color: "#06b6d4", bgColor: "bg-cyan-500" },
   "tv, streaming": { icon: "📺", color: "#06b6d4", bgColor: "bg-cyan-500" },
   others: { icon: "📦", color: "#6b7280", bgColor: "bg-gray-500" },
@@ -110,6 +111,11 @@ export function DashboardClient({ data }: DashboardClientProps) {
   const router = useRouter()
   const { displayCurrency, convert } = useCurrency()
   const [activeTab, setActiveTab] = useState<"accounts" | "records">("accounts")
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
   const [showBalance, setShowBalance] = useState(true)
   const [showAddTransaction, setShowAddTransaction] = useState(false)
   const [showEditTransaction, setShowEditTransaction] = useState(false)
@@ -306,8 +312,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
       </div>
 
       {/* Tabs - Underline style from original design */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "accounts" | "records")}>
-        <TabsList className="bg-transparent border-b border-neutral-800 w-full justify-start rounded-none h-auto p-0 gap-4 sm:gap-8">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "accounts" | "records")} className="w-full">
+        <TabsList className="bg-transparent border-b border-neutral-800 w-full justify-start rounded-none h-auto p-0 gap-4 sm:gap-8 mb-4">
           <TabsTrigger
             value="accounts"
             className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-neutral-500 rounded-none px-0 pb-3 font-medium transition-none text-sm sm:text-base"
@@ -321,10 +327,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
             Records
           </TabsTrigger>
         </TabsList>
-      </Tabs>
 
-      {activeTab === "accounts" ? (
-        <div className="space-y-4">
+        <TabsContent value="accounts" className="space-y-4 focus-visible:outline-none focus:outline-none">
           {/* List of accounts Card */}
           <Card className="bg-neutral-900 border-neutral-800">
             <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6 sm:pb-3">
@@ -469,9 +473,9 @@ export function DashboardClient({ data }: DashboardClientProps) {
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-white capitalize leading-none mb-1 truncate">
-                          {tx.type === 'income'
+                          {tx.type.toLowerCase() === 'income'
                             ? 'Income'
-                            : tx.type === 'transfer'
+                            : tx.type.toLowerCase() === 'transfer'
                               ? `Transfer`
                               : tx.category || 'Expense'}
                         </p>
@@ -481,10 +485,10 @@ export function DashboardClient({ data }: DashboardClientProps) {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className={`text-sm font-semibold tracking-tight ${tx.type === 'income' ? 'text-green-400' :
-                        tx.type === 'transfer' ? 'text-blue-400' : 'text-red-400'
+                      <p className={`text-sm font-semibold tracking-tight ${tx.type.toLowerCase() === 'income' ? 'text-green-400' :
+                        tx.type.toLowerCase() === 'transfer' ? 'text-blue-400' : 'text-red-400'
                         }`}>
-                        {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '→' : '-'}{formatNative(tx.amount, tx.wallet.currency)}
+                        {tx.type.toLowerCase() === 'income' ? '+' : tx.type.toLowerCase() === 'transfer' ? '→' : '-'}{formatNative(tx.amount, tx.wallet.currency)}
                       </p>
                       <p className="text-[10px] text-neutral-500 font-medium">{formatDate(tx.date)}</p>
                     </div>
@@ -507,9 +511,9 @@ export function DashboardClient({ data }: DashboardClientProps) {
               )}
             </CardContent>
           </Card>
-        </div>
-      ) : (
-        <div className="space-y-6">
+        </TabsContent>
+
+        <TabsContent value="records" className="space-y-6 focus-visible:outline-none focus:outline-none">
           {/* Filters */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             <Button
@@ -579,10 +583,10 @@ export function DashboardClient({ data }: DashboardClientProps) {
                             </div>
                             <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3">
                               <div className="text-right whitespace-nowrap">
-                                <p className={`text-sm font-semibold tracking-tight ${tx.type === 'income' ? 'text-green-400' :
-                                  tx.type === 'transfer' ? 'text-blue-400' : 'text-red-400'
+                                <p className={`text-sm font-semibold tracking-tight ${tx.type.toLowerCase() === 'income' ? 'text-green-400' :
+                                  tx.type.toLowerCase() === 'transfer' ? 'text-blue-400' : 'text-red-400'
                                   }`}>
-                                  {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '→' : '-'}{formatNative(tx.amount, tx.wallet.currency)}
+                                  {tx.type.toLowerCase() === 'income' ? '+' : tx.type.toLowerCase() === 'transfer' ? '→' : '-'}{formatNative(tx.amount, tx.wallet.currency)}
                                 </p>
                               </div>
                               <div className="flex items-center gap-1">
@@ -619,8 +623,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
               <p className="text-neutral-400 font-bold uppercase tracking-widest text-[10px]">No records found</p>
             </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* Floating Action Button - Matching original design */}
       <Button

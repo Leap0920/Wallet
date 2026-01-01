@@ -57,7 +57,7 @@ export function TransactionsClient({ transactions, wallets }: TransactionsClient
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this transaction?")) return
-    
+
     setDeletingId(id)
     try {
       const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" })
@@ -87,7 +87,7 @@ export function TransactionsClient({ transactions, wallets }: TransactionsClient
           <h1 className="text-2xl font-semibold text-white">Transactions</h1>
           <p className="text-neutral-500 text-sm">{transactions.length} total transactions</p>
         </div>
-        <Button 
+        <Button
           className="bg-white text-black hover:bg-neutral-200"
           onClick={() => setShowAddTransaction(true)}
         >
@@ -135,10 +135,9 @@ export function TransactionsClient({ transactions, wallets }: TransactionsClient
                   {txs.map((tx) => (
                     <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-neutral-800/50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          tx.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10'
-                        }`}>
-                          {tx.type === 'income' 
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tx.type.toLowerCase() === 'income' ? 'bg-green-500/10' : 'bg-red-500/10'
+                          }`}>
+                          {tx.type.toLowerCase() === 'income'
                             ? <ArrowDownLeft className="w-5 h-5 text-green-500" />
                             : <ArrowUpRight className="w-5 h-5 text-red-500" />
                           }
@@ -149,10 +148,9 @@ export function TransactionsClient({ transactions, wallets }: TransactionsClient
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <p className={`font-medium ${
-                          tx.type === 'income' ? 'text-green-500' : 'text-red-500'
-                        }`}>
-                          {tx.type === 'income' ? '+' : '-'}{formatAmount(Math.abs(tx.amount), tx.wallet.currency)}
+                        <p className={`font-medium ${tx.type.toLowerCase() === 'income' ? 'text-green-500' : 'text-red-500'
+                          }`}>
+                          {tx.type.toLowerCase() === 'income' ? '+' : '-'}{formatAmount(Math.abs(tx.amount), tx.wallet.currency)}
                         </p>
                         <Button
                           variant="ghost"
@@ -177,11 +175,11 @@ export function TransactionsClient({ transactions, wallets }: TransactionsClient
             <ArrowUpRight className="w-12 h-12 text-neutral-600 mb-4" />
             <h3 className="text-lg font-medium text-white mb-2">No transactions</h3>
             <p className="text-neutral-500 text-sm text-center mb-6">
-              {wallets.length === 0 
+              {wallets.length === 0
                 ? "Add a wallet first, then start tracking transactions."
                 : "Start tracking your income and expenses."}
             </p>
-            <Button 
+            <Button
               className="bg-white text-black hover:bg-neutral-200"
               onClick={() => setShowAddTransaction(true)}
               disabled={wallets.length === 0}
@@ -198,6 +196,7 @@ export function TransactionsClient({ transactions, wallets }: TransactionsClient
         open={showAddTransaction}
         onOpenChange={setShowAddTransaction}
         wallets={wallets}
+        categories={[]}
         onSuccess={() => router.refresh()}
       />
     </div>

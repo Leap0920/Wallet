@@ -183,7 +183,7 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
                                         <div className="flex items-center gap-3">
                                             <div className={cn(
                                                 "w-10 h-10 rounded-full flex items-center justify-center",
-                                                type === "LENT" ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                                                type === "LENT" ? "bg-red-500/10 text-red-500" : "bg-green-500/10 text-green-500"
                                             )}>
                                                 {type === "LENT" ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
                                             </div>
@@ -351,8 +351,8 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
                     <Card className="bg-neutral-900 border-neutral-800">
                         <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center">
-                                    <TrendingUp className="w-6 h-6 text-green-500" />
+                                <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center">
+                                    <TrendingDown className="w-6 h-6 text-red-500" />
                                 </div>
                                 <div>
                                     <p className="text-sm text-neutral-500">Total Money Lent</p>
@@ -381,8 +381,8 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
                     <Card className="bg-neutral-900 border-neutral-800">
                         <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                                    <TrendingDown className="w-6 h-6 text-red-500" />
+                                <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                                    <TrendingUp className="w-6 h-6 text-green-500" />
                                 </div>
                                 <div>
                                     <p className="text-sm text-neutral-500">Total Money Borrowed</p>

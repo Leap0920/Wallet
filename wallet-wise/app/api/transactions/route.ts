@@ -90,24 +90,31 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // Restore wallet balances
+      // Restore wallet balances (Reverse the original transaction)
       if (type === "transfer") {
         await Promise.all([
           prisma.wallet.update({
             where: { id: fromWalletId },
-            data: { balance: { decrement: parsedAmount + parsedTransferFee } }
+            data: { balance: { increment: parsedAmount + parsedTransferFee } }
           }),
           prisma.wallet.update({
             where: { id: toWalletId },
-            data: { balance: { increment: parsedAmount } }
+            data: { balance: { decrement: parsedAmount } }
           })
         ])
       } else {
-        const balanceChange = type === "income" ? parsedAmount : -parsedAmount
-        await prisma.wallet.update({
-          where: { id: walletId },
-          data: { balance: { increment: balanceChange } }
-        })
+        // If we are "undoing" an income, we subtract it. If undoing an expense, we add it back.
+        if (type.toLowerCase() === "income") {
+          await prisma.wallet.update({
+            where: { id: walletId },
+            data: { balance: { decrement: parsedAmount } }
+          })
+        } else {
+          await prisma.wallet.update({
+            where: { id: walletId },
+            data: { balance: { increment: parsedAmount } }
+          })
+        }
       }
 
       revalidatePath("/dashboard")
@@ -139,7 +146,7 @@ export async function POST(request: NextRequest) {
       // Check if source wallet has sufficient balance
       const sourceWallet = wallets.find((w: any) => w.id === fromWalletId)
       const destWallet = wallets.find((w: any) => w.id === toWalletId)
-      
+
       if (sourceWallet && sourceWallet.balance < (parsedAmount + parsedTransferFee)) {
         return NextResponse.json({ error: "Insufficient balance in source wallet" }, { status: 400 })
       }
@@ -210,12 +217,18 @@ export async function POST(request: NextRequest) {
         include: { wallet: true }
       })
 
-      // Update wallet balance
-      const balanceChange = type === "income" ? parsedAmount : -parsedAmount
-      await prisma.wallet.update({
-        where: { id: walletId },
-        data: { balance: { increment: balanceChange } }
-      })
+      // Update wallet balance efficiently
+      if (type.toLowerCase() === "income") {
+        await prisma.wallet.update({
+          where: { id: walletId },
+          data: { balance: { increment: parsedAmount } }
+        })
+      } else {
+        await prisma.wallet.update({
+          where: { id: walletId },
+          data: { balance: { decrement: parsedAmount } }
+        })
+      }
 
       revalidatePath("/dashboard")
       return NextResponse.json(transaction)

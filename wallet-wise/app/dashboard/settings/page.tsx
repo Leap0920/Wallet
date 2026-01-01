@@ -12,7 +12,9 @@ import {
     EyeOff,
     Loader2,
     AlertTriangle,
-    Globe
+    Globe,
+    Pencil,
+    Check
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,7 +39,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { CURRENCIES, CurrencyCode } from "@/lib/utils"
+import { CURRENCIES, CurrencyCode, DEFAULT_CATEGORIES } from "@/lib/utils"
 import { useCurrency } from "@/components/providers/currency-provider"
 
 export default function SettingsPage() {
@@ -53,6 +55,8 @@ export default function SettingsPage() {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false)
     const [showNewPassword, setShowNewPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const [editingCategory, setEditingCategory] = useState<string | null>(null)
+    const [editValue, setEditValue] = useState("")
 
     // Fetch preferences on mount
     useEffect(() => {
@@ -156,6 +160,43 @@ export default function SettingsPage() {
             }
         } catch (error) {
             toast.error("Failed to remove category")
+        } finally {
+            setIsSavingCategories(false)
+        }
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editValue.trim() || !editingCategory) return
+        if (editValue.trim() === editingCategory) {
+            setEditingCategory(null)
+            return
+        }
+        if (categories.includes(editValue.trim())) {
+            toast.error("Category already exists")
+            return
+        }
+
+        const updatedCategories = categories.map(c => c === editingCategory ? editValue.trim() : c)
+        setIsSavingCategories(true)
+
+        try {
+            const response = await fetch("/api/user/preferences", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ categories: updatedCategories }),
+            })
+
+            if (response.ok) {
+                setCategories(updatedCategories)
+                setEditingCategory(null)
+                setEditValue("")
+                toast.success("Category updated")
+                router.refresh()
+            } else {
+                throw new Error()
+            }
+        } catch (error) {
+            toast.error("Failed to update category")
         } finally {
             setIsSavingCategories(false)
         }
@@ -288,40 +329,87 @@ export default function SettingsPage() {
                         Manage Categories
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex gap-2">
-                        <Input
-                            placeholder="Add new category..."
-                            value={newCategory}
-                            onChange={(e) => setNewCategory(e.target.value)}
-                            className="bg-neutral-800 border-neutral-700 text-white"
-                        />
-                        <Button
-                            onClick={handleAddCategory}
-                            disabled={isSavingCategories}
-                            className="bg-white text-black hover:bg-neutral-200"
-                        >
-                            {isSavingCategories ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
-                        </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2 pt-2">
-                        {categories.map((cat) => (
-                            <div
-                                key={cat}
-                                className="flex items-center gap-2 bg-neutral-800 text-white px-3 py-1.5 rounded-lg border border-neutral-700"
-                            >
-                                <span className="text-sm">{cat}</span>
-                                <button
-                                    onClick={() => handleRemoveCategory(cat)}
-                                    className="text-neutral-500 hover:text-red-400 transition-colors"
+                <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                        <Label className="text-neutral-400 text-xs uppercase tracking-wider font-bold">System Categories</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {DEFAULT_CATEGORIES.map((cat) => (
+                                <div
+                                    key={cat}
+                                    className="flex items-center gap-2 bg-neutral-800/50 text-neutral-400 px-3 py-1.5 rounded-lg border border-neutral-800 shadow-sm"
                                 >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        ))}
-                        {categories.length === 0 && (
-                            <p className="text-sm text-neutral-500 italic">No custom categories added yet.</p>
-                        )}
+                                    <span className="text-sm">{cat}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <Label className="text-neutral-400 text-xs uppercase tracking-wider font-bold">Custom Categories</Label>
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Add new category..."
+                                value={newCategory}
+                                onChange={(e) => setNewCategory(e.target.value)}
+                                className="bg-neutral-800 border-neutral-700 text-white"
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+                            />
+                            <Button
+                                onClick={handleAddCategory}
+                                disabled={isSavingCategories}
+                                className="bg-white text-black hover:bg-neutral-200"
+                            >
+                                {isSavingCategories ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
+                            </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 pt-2">
+                            {categories.map((cat) => (
+                                <div
+                                    key={cat}
+                                    className="flex items-center gap-2 bg-neutral-800 text-white px-3 py-1.5 rounded-lg border border-neutral-700 shadow-lg group"
+                                >
+                                    {editingCategory === cat ? (
+                                        <div className="flex items-center gap-1">
+                                            <input
+                                                autoFocus
+                                                value={editValue}
+                                                onChange={(e) => setEditValue(e.target.value)}
+                                                onBlur={handleSaveEdit}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
+                                                className="bg-transparent border-none focus:ring-0 text-sm w-20 p-0 text-white"
+                                            />
+                                            <button onClick={handleSaveEdit} className="text-green-400 hover:text-green-300">
+                                                <Check className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <span className="text-sm">{cat}</span>
+                                            <div className="flex items-center gap-1 ml-1 overflow-hidden transition-all">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingCategory(cat)
+                                                        setEditValue(cat)
+                                                    }}
+                                                    className="text-neutral-500 hover:text-blue-400 transition-colors"
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRemoveCategory(cat)}
+                                                    className="text-neutral-500 hover:text-red-400 transition-colors"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+                            {categories.length === 0 && (
+                                <p className="text-sm text-neutral-500 italic">No custom categories added yet.</p>
+                            )}
+                        </div>
                     </div>
                 </CardContent>
             </Card>

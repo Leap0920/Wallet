@@ -42,12 +42,18 @@ export async function DELETE(
         })
       ])
     } else {
-      // Reverse regular transaction
-      const balanceChange = transaction.type === "income" ? -transaction.amount : transaction.amount
-      await prisma.wallet.update({
-        where: { id: transaction.walletId },
-        data: { balance: { increment: balanceChange } }
-      })
+      // Reverse regular transaction (DELETING an income should decrease balance, deleting an expense should increase it)
+      if (transaction.type.toLowerCase() === "income") {
+        await prisma.wallet.update({
+          where: { id: transaction.walletId },
+          data: { balance: { decrement: transaction.amount } }
+        })
+      } else {
+        await prisma.wallet.update({
+          where: { id: transaction.walletId },
+          data: { balance: { increment: transaction.amount } }
+        })
+      }
     }
 
     // Delete transaction
@@ -104,11 +110,18 @@ export async function PATCH(
         })
       ])
     } else {
-      const oldBalanceChange = oldTx.type === "income" ? -oldTx.amount : oldTx.amount
-      await prisma.wallet.update({
-        where: { id: oldTx.walletId },
-        data: { balance: { increment: oldBalanceChange } }
-      })
+      // Reverse old regular transaction
+      if (oldTx.type.toLowerCase() === "income") {
+        await prisma.wallet.update({
+          where: { id: oldTx.walletId },
+          data: { balance: { decrement: oldTx.amount } }
+        })
+      } else {
+        await prisma.wallet.update({
+          where: { id: oldTx.walletId },
+          data: { balance: { increment: oldTx.amount } }
+        })
+      }
     }
 
     // --- Step 2: Update Transaction ---
@@ -140,11 +153,18 @@ export async function PATCH(
         })
       ])
     } else {
-      const newBalanceChange = type === "income" ? newAmount : -newAmount
-      await prisma.wallet.update({
-        where: { id: newWalletId },
-        data: { balance: { increment: newBalanceChange } }
-      })
+      // Apply new regular transaction
+      if (type.toLowerCase() === "income") {
+        await prisma.wallet.update({
+          where: { id: newWalletId },
+          data: { balance: { increment: newAmount } }
+        })
+      } else {
+        await prisma.wallet.update({
+          where: { id: newWalletId },
+          data: { balance: { decrement: newAmount } }
+        })
+      }
     }
 
     revalidatePath("/dashboard")
