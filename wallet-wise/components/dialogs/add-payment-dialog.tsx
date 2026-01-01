@@ -40,47 +40,69 @@ interface AddPaymentDialogProps {
         remaining: number
         walletId: string | null
     } | null
+    editPayment?: {
+        id: string
+        amount: number
+        note: string | null
+        walletId: string | null
+    } | null
 }
 
-export function AddPaymentDialog({ open, onOpenChange, onSuccess, wallets, debt }: AddPaymentDialogProps) {
+export function AddPaymentDialog({ open, onOpenChange, onSuccess, wallets, debt, editPayment }: AddPaymentDialogProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [amount, setAmount] = useState("")
     const [note, setNote] = useState("")
-    const [walletId, setWalletId] = useState<string>(debt?.walletId || "NO_WALLET")
+    const [walletId, setWalletId] = useState<string>("")
 
-    // Update walletId if debt changes
+    // Update state when dialog opens or editPayment changes
     useEffect(() => {
-        if (debt?.walletId) setWalletId(debt.walletId)
-        else setWalletId("NO_WALLET")
-    }, [debt])
+        if (open) {
+            if (editPayment) {
+                setAmount(editPayment.amount.toString())
+                setNote(editPayment.note || "")
+                setWalletId(editPayment.walletId || "")
+            } else {
+                setAmount("")
+                setNote("")
+                setWalletId(debt?.walletId || (wallets.length > 0 ? wallets[0].id : ""))
+            }
+        }
+    }, [open, editPayment, debt, wallets])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!debt) return
+        if (!debt || !walletId) {
+            toast.error("Please select a wallet")
+            return
+        }
 
         setIsLoading(true)
 
         try {
-            const res = await fetch(`/api/debts/${debt.id}/payments`, {
-                method: "POST",
+            const url = editPayment
+                ? `/api/debts/${debt.id}/payments/${editPayment.id}`
+                : `/api/debts/${debt.id}/payments`
+
+            const method = editPayment ? "PATCH" : "POST"
+
+            const res = await fetch(url, {
+                method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     amount: parseFloat(amount),
                     note,
                     date: new Date(),
-                    walletId: walletId === "NO_WALLET" ? null : walletId
+                    walletId: walletId
                 })
             })
 
             if (!res.ok) throw new Error()
 
-            toast.success("Payment added")
-            setAmount("")
-            setNote("")
+            toast.success(editPayment ? "Payment updated" : "Payment added")
             onOpenChange(false)
             onSuccess()
         } catch (error) {
-            toast.error("Failed to add payment")
+            toast.error(editPayment ? "Failed to update payment" : "Failed to add payment")
         } finally {
             setIsLoading(false)
         }
@@ -90,7 +112,7 @@ export function AddPaymentDialog({ open, onOpenChange, onSuccess, wallets, debt 
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="bg-neutral-900 border-neutral-800 text-white sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Add Payment</DialogTitle>
+                    <DialogTitle>{editPayment ? "Edit Payment" : "Add Payment"}</DialogTitle>
                 </DialogHeader>
                 {debt && (
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -104,16 +126,16 @@ export function AddPaymentDialog({ open, onOpenChange, onSuccess, wallets, debt 
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-neutral-400">Wallet (Optional - will affect balance)</Label>
+                            <Label className="text-neutral-400">Wallet (Required - will affect balance)</Label>
                             <Select
                                 value={walletId}
                                 onValueChange={(value) => setWalletId(value)}
+                                required
                             >
                                 <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white">
                                     <SelectValue placeholder="Select wallet" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-neutral-900 border-neutral-800 text-white">
-                                    <SelectItem value="NO_WALLET">No Wallet</SelectItem>
                                     {wallets.map((wallet) => (
                                         <SelectItem key={wallet.id} value={wallet.id}>
                                             {wallet.name} ({wallet.currency})

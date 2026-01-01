@@ -46,6 +46,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
 interface Payment {
@@ -53,6 +59,7 @@ interface Payment {
     amount: number
     date: string
     note: string | null
+    walletId: string | null
 }
 
 interface Debt {
@@ -89,6 +96,11 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
     const { displayCurrency } = useCurrency()
     const [showAddDebt, setShowAddDebt] = useState(false)
     const [editingDebt, setEditingDebt] = useState<Debt | null>(null)
+    const [viewingHistory, setViewingHistory] = useState<Debt | null>(null)
+    const [editingPayment, setEditingPayment] = useState<{
+        debt: Debt
+        payment: Payment
+    } | null>(null)
     const [payingDebt, setPayingDebt] = useState<{
         id: string
         person: string
@@ -102,6 +114,11 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
         open: false,
         id: null,
         person: ""
+    })
+    const [deletePaymentConfirm, setDeletePaymentConfirm] = useState<{ open: boolean; debtId: string | null; paymentId: string | null }>({
+        open: false,
+        debtId: null,
+        paymentId: null
     })
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("ALL")
@@ -144,6 +161,25 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
 
     const lentTotals = calculateTotals(lentDebts)
     const borrowedTotals = calculateTotals(borrowedDebts)
+
+    const handleDeletePayment = async () => {
+        if (!deletePaymentConfirm.debtId || !deletePaymentConfirm.paymentId) return
+        try {
+            const res = await fetch(`/api/debts/${deletePaymentConfirm.debtId}/payments/${deletePaymentConfirm.paymentId}`, {
+                method: "DELETE"
+            })
+            if (!res.ok) throw new Error()
+            toast.success("Payment deleted")
+            router.refresh()
+            if (viewingHistory?.id === deletePaymentConfirm.debtId) {
+                setViewingHistory(null)
+            }
+        } catch {
+            toast.error("Failed to delete payment")
+        } finally {
+            setDeletePaymentConfirm({ open: false, debtId: null, paymentId: null })
+        }
+    }
 
     const handleDeleteConfirm = async () => {
         if (!deleteConfirm.id) return
@@ -231,6 +267,12 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
                                                         Edit Details
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
+                                                        onClick={() => setViewingHistory(debt)}
+                                                        className="focus:bg-neutral-800 cursor-pointer"
+                                                    >
+                                                        Payment History
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
                                                         onClick={() => setDeleteConfirm({ open: true, id: debt.id, person: debt.person })}
                                                         className="text-red-400 focus:bg-neutral-800 cursor-pointer"
                                                     >
@@ -278,7 +320,10 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
                                 </div>
 
                                 <div className="px-5 py-3 bg-neutral-800/30 border-t border-neutral-800 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
+                                    <div
+                                        className="flex items-center gap-4 cursor-pointer hover:bg-neutral-800/50 p-1 rounded-md transition-colors"
+                                        onClick={() => setViewingHistory(debt)}
+                                    >
                                         {debt.payments.length > 0 && (
                                             <div className="flex -space-x-2">
                                                 {debt.payments.slice(0, 3).map((_, i) => (
@@ -302,15 +347,19 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
                                             variant="outline"
                                             size="sm"
                                             className="h-8 text-xs border-neutral-700 hover:bg-neutral-800 text-white"
-                                            onClick={() => setPayingDebt({
-                                                id: debt.id,
-                                                person: debt.person,
-                                                type: debt.type,
-                                                amount: debt.amount,
-                                                interest: debt.interest,
-                                                remaining: remaining,
-                                                walletId: debt.walletId
-                                            })}
+                                            onClick={() => {
+                                                const paid = debt.payments.reduce((acc, p) => acc + p.amount, 0)
+                                                const rem = (debt.amount + (debt.interest || 0)) - paid
+                                                setPayingDebt({
+                                                    id: debt.id,
+                                                    person: debt.person,
+                                                    type: debt.type,
+                                                    amount: debt.amount,
+                                                    interest: debt.interest,
+                                                    remaining: rem,
+                                                    walletId: debt.walletId
+                                                })
+                                            }}
                                         >
                                             Record Payment
                                         </Button>
@@ -479,12 +528,78 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
             />
 
             <AddPaymentDialog
-                open={payingDebt !== null}
-                onOpenChange={(open) => !open && setPayingDebt(null)}
+                open={payingDebt !== null || editingPayment !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setPayingDebt(null)
+                        setEditingPayment(null)
+                    }
+                }}
                 onSuccess={() => router.refresh()}
-                debt={payingDebt}
+                debt={payingDebt || (editingPayment ? {
+                    id: editingPayment.debt.id,
+                    person: editingPayment.debt.person,
+                    type: editingPayment.debt.type,
+                    amount: editingPayment.debt.amount,
+                    interest: editingPayment.debt.interest,
+                    remaining: (editingPayment.debt.amount + (editingPayment.debt.interest || 0)) -
+                        editingPayment.debt.payments.reduce((acc, p) => acc + p.amount, 0),
+                    walletId: editingPayment.debt.walletId
+                } : null)}
+                editPayment={editingPayment?.payment}
                 wallets={wallets}
             />
+
+            {/* Payment History Dialog */}
+            <Dialog open={viewingHistory !== null} onOpenChange={(open) => !open && setViewingHistory(null)}>
+                <DialogContent className="bg-neutral-900 border-neutral-800 text-white sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Payment History - {viewingHistory?.person}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                        {viewingHistory?.payments.length === 0 ? (
+                            <p className="text-center py-8 text-neutral-500">No payments recorded yet.</p>
+                        ) : (
+                            viewingHistory?.payments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((p) => (
+                                <div key={p.id} className="p-3 bg-neutral-800 rounded-lg flex items-center justify-between group">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-white">{formatCurrency(p.amount, displayCurrency)}</span>
+                                            <span className="text-[10px] text-neutral-500">
+                                                {new Date(p.date).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        {p.note && <p className="text-xs text-neutral-400">{p.note}</p>}
+                                        {p.walletId && (
+                                            <p className="text-[10px] text-neutral-500">
+                                                Wallet: {wallets.find(w => w.id === p.walletId)?.name || 'Unknown'}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-neutral-400 hover:text-white"
+                                            onClick={() => setEditingPayment({ debt: viewingHistory, payment: p })}
+                                        >
+                                            <MoreVertical className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                            onClick={() => setDeletePaymentConfirm({ open: true, debtId: viewingHistory.id, paymentId: p.id })}
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <ConfirmDialog
                 open={deleteConfirm.open}
@@ -494,6 +609,16 @@ export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
                 confirmText="Delete"
                 variant="destructive"
                 onConfirm={handleDeleteConfirm}
+            />
+
+            <ConfirmDialog
+                open={deletePaymentConfirm.open}
+                onOpenChange={(open) => !open && setDeletePaymentConfirm({ ...deletePaymentConfirm, open: false })}
+                title="Delete Payment"
+                description="Are you sure you want to delete this payment record? This will revert the balance in the associated wallet and update the debt status."
+                confirmText="Delete"
+                variant="destructive"
+                onConfirm={handleDeletePayment}
             />
         </div>
     )

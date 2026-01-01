@@ -20,6 +20,10 @@ export async function POST(
             return new NextResponse("Missing amount", { status: 400 })
         }
 
+        if (!walletId) {
+            return new NextResponse("Missing wallet selection", { status: 400 })
+        }
+
         const numericAmount = parseFloat(amount)
 
         const payment = await prisma.$transaction(async (tx) => {
