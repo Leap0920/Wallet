@@ -203,6 +203,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid wallet" }, { status: 400 })
       }
 
+      // Overdraft check for expenses
+      if (type.toLowerCase() === "expense" && wallet.balance < parsedAmount) {
+        return NextResponse.json({ error: "Insufficient balance" }, { status: 400 })
+      }
+
       // Create transaction
       const transaction = await prisma.transaction.create({
         data: {

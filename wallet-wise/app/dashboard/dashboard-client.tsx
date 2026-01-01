@@ -121,6 +121,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
   const [showEditTransaction, setShowEditTransaction] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [showAddWallet, setShowAddWallet] = useState(false)
+  const [showEditWallet, setShowEditWallet] = useState(false)
+  const [editingWallet, setEditingWallet] = useState<any | null>(null)
   const [categories, setCategories] = useState<string[]>([])
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | "income" | "expense" | "transfer">("all")
@@ -218,6 +220,11 @@ export function DashboardClient({ data }: DashboardClientProps) {
   const handleEditClick = (tx: Transaction) => {
     setEditingTransaction(tx)
     setShowEditTransaction(true)
+  }
+
+  const handleEditWalletClick = (wallet: any) => {
+    setEditingWallet(wallet)
+    setShowEditWallet(true)
   }
 
   const handleDeleteClick = (type: 'transaction' | 'wallet', id: string, name: string) => {
@@ -344,13 +351,27 @@ export function DashboardClient({ data }: DashboardClientProps) {
                     key={wallet.id}
                     className={`${walletColors[index % walletColors.length]} rounded-xl p-4 relative group min-h-[100px] flex flex-col justify-between`}
                   >
-                    <button
-                      onClick={() => handleDeleteClick('wallet', wallet.id, wallet.name)}
-                      disabled={deletingId === wallet.id}
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-black/10 rounded"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-white/70" />
-                    </button>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditWalletClick(wallet)
+                        }}
+                        className="p-1 hover:bg-black/10 rounded"
+                      >
+                        <Pencil className="w-3 h-3 text-white/70" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteClick('wallet', wallet.id, wallet.name)
+                        }}
+                        disabled={deletingId === wallet.id}
+                        className="p-1 hover:bg-black/10 rounded"
+                      >
+                        <Trash2 className="w-3 h-3 text-white/70" />
+                      </button>
+                    </div>
                     <div>
                       <p className="text-white font-medium text-sm">{wallet.name}</p>
                     </div>
@@ -399,13 +420,13 @@ export function DashboardClient({ data }: DashboardClientProps) {
                   ))}
                 </div>
               </div>
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-center">
                 <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
                   {period === 'week' ? 'Past 7 days' : period === 'month' ? 'This month' : 'This year'}
                 </p>
-                <div className="text-right">
+                <div className="flex items-center gap-2">
                   <p className="text-[10px] text-neutral-500 uppercase tracking-wider">vs past period</p>
-                  <p className={`text-sm font-medium mt-1 ${expenseChange >= 0 ? 'text-red-400' : 'text-green-400'}`}>
+                  <p className={`text-sm font-medium ${expenseChange >= 0 ? 'text-red-400' : 'text-green-400'}`}>
                     {expenseChange >= 0 ? '+' : ''}{expenseChange.toFixed(0)}%
                   </p>
                 </div>
@@ -654,8 +675,15 @@ export function DashboardClient({ data }: DashboardClientProps) {
       />
 
       <AddWalletDialog
-        open={showAddWallet}
-        onOpenChange={setShowAddWallet}
+        open={showAddWallet || showEditWallet}
+        onOpenChange={(open) => {
+          setShowAddWallet(open)
+          if (!open) {
+            setShowEditWallet(false)
+            setEditingWallet(null)
+          }
+        }}
+        editWallet={editingWallet}
         onSuccess={() => router.refresh()}
       />
 

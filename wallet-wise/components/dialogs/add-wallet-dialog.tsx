@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Loader2, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,6 +25,13 @@ interface AddWalletDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+  editWallet?: {
+    id: string
+    name: string
+    type: string
+    balance: number
+    icon: string
+  } | null
 }
 
 const WALLET_TYPES = [
@@ -43,16 +50,48 @@ const WALLET_PRESETS = [
   { name: "Custom", type: "", icon: "wallet" },
 ]
 
-export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDialogProps) {
+export function AddWalletDialog({ open, onOpenChange, onSuccess, editWallet = null }: AddWalletDialogProps) {
   const { displayCurrency } = useCurrency()
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+
   const [formData, setFormData] = useState({
     name: "",
     type: "e-wallet",
     balance: "",
     icon: "wallet"
   })
+
+  // Pre-fill form when editWallet changes
+  useState(() => {
+    if (editWallet) {
+      setFormData({
+        name: editWallet.name,
+        type: editWallet.type,
+        balance: editWallet.balance.toString(),
+        icon: editWallet.icon
+      })
+      const preset = WALLET_PRESETS.find(p => p.name === editWallet.name)
+      setSelectedPreset(preset ? preset.name : "Custom")
+    }
+  })
+
+  // Update form data when editWallet or open changes
+  useEffect(() => {
+    if (editWallet && open) {
+      setFormData({
+        name: editWallet.name,
+        type: editWallet.type,
+        balance: editWallet.balance.toString(),
+        icon: editWallet.icon
+      })
+      const preset = WALLET_PRESETS.find(p => p.name === editWallet.name)
+      setSelectedPreset(preset ? preset.name : "Custom")
+    } else if (!editWallet && open) {
+      setFormData({ name: "", type: "e-wallet", balance: "", icon: "wallet" })
+      setSelectedPreset(null)
+    }
+  }, [editWallet, open])
 
   const handlePresetSelect = (preset: typeof WALLET_PRESETS[0]) => {
     if (preset.name === "Custom") {
@@ -74,8 +113,11 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
     setIsLoading(true)
 
     try {
-      const res = await fetch("/api/wallets", {
-        method: "POST",
+      const url = editWallet ? `/api/wallets/${editWallet.id}` : "/api/wallets"
+      const method = editWallet ? "PUT" : "POST"
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           "Cache-Control": "no-cache"
@@ -83,22 +125,23 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
         body: JSON.stringify({
           ...formData,
           balance: parseFloat(formData.balance) || 0,
-          currency: displayCurrency // Use user's display currency
+          currency: displayCurrency
         })
       })
 
-      if (!res.ok) throw new Error("Failed to create wallet")
+      if (!res.ok) throw new Error(`Failed to ${editWallet ? 'update' : 'create'} wallet`)
 
-      // Wait for the response to ensure the wallet is fully saved
       await res.json()
 
-      toast.success("Wallet created")
-      setFormData({ name: "", type: "e-wallet", balance: "", icon: "wallet" })
-      setSelectedPreset(null)
+      toast.success(editWallet ? "Wallet updated" : "Wallet created")
+      if (!editWallet) {
+        setFormData({ name: "", type: "e-wallet", balance: "", icon: "wallet" })
+        setSelectedPreset(null)
+      }
       onOpenChange(false)
       onSuccess()
     } catch (error) {
-      toast.error("Failed to create wallet")
+      toast.error(`Failed to ${editWallet ? 'update' : 'create'} wallet`)
     } finally {
       setIsLoading(false)
     }
@@ -108,7 +151,7 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-neutral-900 border-neutral-800 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white">Add Wallet</DialogTitle>
+          <DialogTitle className="text-white">{editWallet ? "Edit Wallet" : "Add Wallet"}</DialogTitle>
         </DialogHeader>
 
         {/* Presets */}
@@ -119,8 +162,8 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
               type="button"
               variant="outline"
               className={`h-auto py-3 flex flex-col gap-1 ${selectedPreset === preset.name
-                  ? "border-white bg-neutral-800"
-                  : "border-neutral-700 hover:bg-neutral-800"
+                ? "border-white bg-neutral-800"
+                : "border-neutral-700 hover:bg-neutral-800"
                 }`}
               onClick={() => handlePresetSelect(preset)}
             >
@@ -169,7 +212,7 @@ export function AddWalletDialog({ open, onOpenChange, onSuccess }: AddWalletDial
           </div>
 
           <Button type="submit" className="w-full bg-white text-black hover:bg-neutral-200" disabled={isLoading}>
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Wallet"}
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (editWallet ? "Save Changes" : "Create Wallet")}
           </Button>
         </form>
       </DialogContent>

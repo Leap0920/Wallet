@@ -124,7 +124,20 @@ export async function PATCH(
       }
     }
 
-    // --- Step 2: Update Transaction ---
+    // --- Step 2: Overdraft Check for new effect ---
+    if (type === "transfer") {
+      const fromWallet = await prisma.wallet.findUnique({ where: { id: newFromWalletId!, userId: session.user.id } })
+      if (!fromWallet || fromWallet.balance < (newAmount + newTransferFee)) {
+        return NextResponse.json({ error: "Insufficient balance in source wallet" }, { status: 400 })
+      }
+    } else if (type.toLowerCase() === "expense") {
+      const wallet = await prisma.wallet.findUnique({ where: { id: newWalletId!, userId: session.user.id } })
+      if (!wallet || wallet.balance < newAmount) {
+        return NextResponse.json({ error: "Insufficient balance" }, { status: 400 })
+      }
+    }
+
+    // --- Step 3: Update Transaction ---
     const updatedTx = await prisma.transaction.update({
       where: { id, userId: session.user.id },
       data: {
@@ -140,7 +153,7 @@ export async function PATCH(
       }
     })
 
-    // --- Step 3: Apply New Effect ---
+    // --- Step 4: Apply New Effect ---
     if (type === "transfer") {
       await Promise.all([
         prisma.wallet.update({

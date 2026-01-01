@@ -26,6 +26,7 @@ interface Wallet {
     name: string
     type: string
     currency: string
+    balance: number
 }
 
 interface Transaction {
@@ -96,6 +97,38 @@ export function EditTransactionDialog({ open, onOpenChange, wallets, categories,
             if (!formData.walletId) {
                 toast.error("Please select a wallet")
                 return
+            }
+        }
+
+        // Overdraft Prevention
+        const amountNum = parseFloat(formData.amount) || 0
+        if (formData.type === "expense") {
+            const wallet = wallets.find(w => w.id === formData.walletId)
+            if (wallet) {
+                const currentBalance = wallet.balance
+                const adjustedBalance = transaction.type === "expense" && transaction.walletId === wallet.id
+                    ? currentBalance + transaction.amount
+                    : currentBalance
+
+                if (amountNum > adjustedBalance) {
+                    toast.error(`Insufficient balance. Available: ${wallet.currency} ${adjustedBalance}`)
+                    return
+                }
+            }
+        } else if (formData.type === "transfer") {
+            const fromWallet = wallets.find(w => w.id === formData.fromWalletId)
+            const feeNum = parseFloat(formData.transferFee) || 0
+            if (fromWallet) {
+                const currentBalance = fromWallet.balance
+                const oldFullAmount = transaction.type === "transfer" ? (transaction.amount + (transaction.transferFee || 0)) : 0
+                const adjustedBalance = transaction.type === "transfer" && transaction.fromWalletId === fromWallet.id
+                    ? currentBalance + oldFullAmount
+                    : currentBalance
+
+                if ((amountNum + feeNum) > adjustedBalance) {
+                    toast.error(`Insufficient balance in source wallet. Available: ${fromWallet.currency} ${adjustedBalance}`)
+                    return
+                }
             }
         }
 

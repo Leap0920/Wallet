@@ -25,6 +25,7 @@ interface Wallet {
   id: string
   name: string
   type: string
+  balance: number
   currency: string
 }
 
@@ -68,6 +69,23 @@ export function AddTransactionDialog({ open, onOpenChange, wallets, categories, 
     } else {
       if (!formData.walletId) {
         toast.error("Please select a wallet")
+        return
+      }
+    }
+
+    // Overdraft Prevention
+    const amountNum = parseFloat(formData.amount) || 0
+    if (formData.type === "expense") {
+      const wallet = wallets.find(w => w.id === formData.walletId)
+      if (wallet && amountNum > wallet.balance) {
+        toast.error(`Insufficient balance. Available: ${wallet.currency} ${wallet.balance}`)
+        return
+      }
+    } else if (formData.type === "transfer") {
+      const fromWallet = wallets.find(w => w.id === formData.fromWalletId)
+      const feeNum = parseFloat(formData.transferFee) || 0
+      if (fromWallet && (amountNum + feeNum) > fromWallet.balance) {
+        toast.error(`Insufficient balance in source wallet. Available: ${fromWallet.currency} ${fromWallet.balance}`)
         return
       }
     }

@@ -64,7 +64,12 @@ export default function SettingsPage() {
             const response = await fetch("/api/user/preferences")
             if (response.ok) {
                 const data = await response.json()
-                setCategories(data.categories || [])
+                // If user has no custom categories, initialize with default ones
+                if (!data.categories || data.categories.length === 0) {
+                    setCategories(DEFAULT_CATEGORIES)
+                } else {
+                    setCategories(data.categories)
+                }
             }
         }
         fetchPreferences()
@@ -331,21 +336,10 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-4">
-                        <Label className="text-neutral-400 text-xs uppercase tracking-wider font-bold">System Categories</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {DEFAULT_CATEGORIES.map((cat) => (
-                                <div
-                                    key={cat}
-                                    className="flex items-center gap-2 bg-neutral-800/50 text-neutral-400 px-3 py-1.5 rounded-lg border border-neutral-800 shadow-sm"
-                                >
-                                    <span className="text-sm">{cat}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <Label className="text-neutral-400 text-xs uppercase tracking-wider font-bold">Custom Categories</Label>
+                        <Label className="text-neutral-400 text-xs uppercase tracking-wider font-bold">Categories List</Label>
+                        <p className="text-sm text-neutral-500">
+                            These categories will be available when you record new transactions. You can edit or delete them as needed.
+                        </p>
                         <div className="flex gap-2">
                             <Input
                                 placeholder="Add new category..."
@@ -407,7 +401,7 @@ export default function SettingsPage() {
                                 </div>
                             ))}
                             {categories.length === 0 && (
-                                <p className="text-sm text-neutral-500 italic">No custom categories added yet.</p>
+                                <p className="text-sm text-neutral-500 italic">No categories added yet.</p>
                             )}
                         </div>
                     </div>
