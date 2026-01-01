@@ -46,10 +46,25 @@ export default function SettingsPage() {
     const { displayCurrency, setDisplayCurrency } = useCurrency()
     const [isLoading, setIsLoading] = useState(false)
     const [isSavingCurrency, setIsSavingCurrency] = useState(false)
+    const [isSavingCategories, setIsSavingCategories] = useState(false)
     const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(displayCurrency)
+    const [categories, setCategories] = useState<string[]>([])
+    const [newCategory, setNewCategory] = useState("")
     const [showCurrentPassword, setShowCurrentPassword] = useState(false)
     const [showNewPassword, setShowNewPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+    // Fetch preferences on mount
+    useEffect(() => {
+        const fetchPreferences = async () => {
+            const response = await fetch("/api/user/preferences")
+            if (response.ok) {
+                const data = await response.json()
+                setCategories(data.categories || [])
+            }
+        }
+        fetchPreferences()
+    }, [])
 
     // Sync local state when displayCurrency changes
     useEffect(() => {
@@ -86,6 +101,63 @@ export default function SettingsPage() {
             setSelectedCurrency(displayCurrency) // Revert on error
         } finally {
             setIsSavingCurrency(false)
+        }
+    }
+
+    const handleAddCategory = async () => {
+        if (!newCategory.trim()) return
+        if (categories.includes(newCategory.trim())) {
+            toast.error("Category already exists")
+            return
+        }
+
+        const updatedCategories = [...categories, newCategory.trim()]
+        setIsSavingCategories(true)
+
+        try {
+            const response = await fetch("/api/user/preferences", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ categories: updatedCategories }),
+            })
+
+            if (response.ok) {
+                setCategories(updatedCategories)
+                setNewCategory("")
+                toast.success("Category added")
+                router.refresh()
+            } else {
+                throw new Error()
+            }
+        } catch (error) {
+            toast.error("Failed to add category")
+        } finally {
+            setIsSavingCategories(false)
+        }
+    }
+
+    const handleRemoveCategory = async (categoryToRemove: string) => {
+        const updatedCategories = categories.filter(c => c !== categoryToRemove)
+        setIsSavingCategories(true)
+
+        try {
+            const response = await fetch("/api/user/preferences", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ categories: updatedCategories }),
+            })
+
+            if (response.ok) {
+                setCategories(updatedCategories)
+                toast.success("Category removed")
+                router.refresh()
+            } else {
+                throw new Error()
+            }
+        } catch (error) {
+            toast.error("Failed to remove category")
+        } finally {
+            setIsSavingCategories(false)
         }
     }
 
@@ -204,6 +276,52 @@ export default function SettingsPage() {
                                 <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
                             )}
                         </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Categories Management */}
+            <Card className="bg-neutral-900 border-neutral-800">
+                <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                        <Settings className="w-5 h-5" />
+                        Manage Categories
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex gap-2">
+                        <Input
+                            placeholder="Add new category..."
+                            value={newCategory}
+                            onChange={(e) => setNewCategory(e.target.value)}
+                            className="bg-neutral-800 border-neutral-700 text-white"
+                        />
+                        <Button
+                            onClick={handleAddCategory}
+                            disabled={isSavingCategories}
+                            className="bg-white text-black hover:bg-neutral-200"
+                        >
+                            {isSavingCategories ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
+                        </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                        {categories.map((cat) => (
+                            <div
+                                key={cat}
+                                className="flex items-center gap-2 bg-neutral-800 text-white px-3 py-1.5 rounded-lg border border-neutral-700"
+                            >
+                                <span className="text-sm">{cat}</span>
+                                <button
+                                    onClick={() => handleRemoveCategory(cat)}
+                                    className="text-neutral-500 hover:text-red-400 transition-colors"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        ))}
+                        {categories.length === 0 && (
+                            <p className="text-sm text-neutral-500 italic">No custom categories added yet.</p>
+                        )}
                     </div>
                 </CardContent>
             </Card>

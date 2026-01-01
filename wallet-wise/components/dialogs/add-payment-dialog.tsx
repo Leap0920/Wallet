@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,10 +14,23 @@ import {
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/utils"
 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+
 interface AddPaymentDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     onSuccess: () => void
+    wallets: {
+        id: string
+        name: string
+        currency: string
+    }[]
     debt: {
         id: string
         person: string
@@ -25,13 +38,21 @@ interface AddPaymentDialogProps {
         amount: number
         interest: number | null
         remaining: number
+        walletId: string | null
     } | null
 }
 
-export function AddPaymentDialog({ open, onOpenChange, onSuccess, debt }: AddPaymentDialogProps) {
+export function AddPaymentDialog({ open, onOpenChange, onSuccess, wallets, debt }: AddPaymentDialogProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [amount, setAmount] = useState("")
     const [note, setNote] = useState("")
+    const [walletId, setWalletId] = useState<string>(debt?.walletId || "NO_WALLET")
+
+    // Update walletId if debt changes
+    useEffect(() => {
+        if (debt?.walletId) setWalletId(debt.walletId)
+        else setWalletId("NO_WALLET")
+    }, [debt])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -46,7 +67,8 @@ export function AddPaymentDialog({ open, onOpenChange, onSuccess, debt }: AddPay
                 body: JSON.stringify({
                     amount: parseFloat(amount),
                     note,
-                    date: new Date()
+                    date: new Date(),
+                    walletId: walletId === "NO_WALLET" ? null : walletId
                 })
             })
 
@@ -78,6 +100,31 @@ export function AddPaymentDialog({ open, onOpenChange, onSuccess, debt }: AddPay
                             </p>
                             <p className="text-sm text-neutral-400">
                                 Remaining: <span className="text-white font-medium">{formatCurrency(debt.remaining, "PHP")}</span>
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-neutral-400">Wallet (Optional - will affect balance)</Label>
+                            <Select
+                                value={walletId}
+                                onValueChange={(value) => setWalletId(value)}
+                            >
+                                <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white">
+                                    <SelectValue placeholder="Select wallet" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-neutral-900 border-neutral-800 text-white">
+                                    <SelectItem value="NO_WALLET">No Wallet</SelectItem>
+                                    {wallets.map((wallet) => (
+                                        <SelectItem key={wallet.id} value={wallet.id}>
+                                            {wallet.name} ({wallet.currency})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-[10px] text-neutral-500">
+                                {debt.type === "LENT"
+                                    ? "Receiving payment will add to the selected wallet."
+                                    : "Paying debt will deduct from the selected wallet."}
                             </p>
                         </div>
 

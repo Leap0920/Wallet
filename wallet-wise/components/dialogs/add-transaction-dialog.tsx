@@ -31,6 +31,7 @@ interface AddTransactionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   wallets: Wallet[]
+  categories: string[]
   onSuccess: () => void
 }
 
@@ -48,7 +49,8 @@ const CATEGORIES = [
   "Other"
 ]
 
-export function AddTransactionDialog({ open, onOpenChange, wallets, onSuccess }: AddTransactionDialogProps) {
+export function AddTransactionDialog({ open, onOpenChange, wallets, categories, onSuccess }: AddTransactionDialogProps) {
+  const allCategories = Array.from(new Set([...CATEGORIES, ...(categories || [])]))
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     type: "expense",
@@ -244,7 +246,7 @@ export function AddTransactionDialog({ open, onOpenChange, wallets, onSuccess }:
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent className="bg-neutral-800 border-neutral-700">
-                    {CATEGORIES.map((cat) => (
+                    {allCategories.map((cat) => (
                       <SelectItem key={cat} value={cat} className="text-white focus:bg-neutral-700">
                         {cat}
                       </SelectItem>

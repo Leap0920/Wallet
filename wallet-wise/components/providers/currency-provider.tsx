@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { useSession } from "next-auth/react"
 import { convertCurrency, formatCurrency, CurrencyCode, CURRENCIES } from "@/lib/utils"
 
 interface CurrencyContextType {
@@ -22,7 +23,15 @@ interface CurrencyProviderProps {
 }
 
 export function CurrencyProvider({ children, initialDisplayCurrency = "PHP" }: CurrencyProviderProps) {
+  const { data: session } = useSession()
   const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>(initialDisplayCurrency)
+
+  // Sync displayCurrency with session preference
+  useEffect(() => {
+    if ((session?.user as any)?.displayCurrency) {
+      setDisplayCurrency((session.user as any).displayCurrency)
+    }
+  }, [session])
   const [rates, setRates] = useState<Record<string, number>>({
     USD: 1,
     PHP: 56.5,
@@ -68,8 +77,8 @@ export function CurrencyProvider({ children, initialDisplayCurrency = "PHP" }: C
   const formatAmount = useCallback(
     (amount: number, fromCurrency?: string) => {
       const from = fromCurrency || displayCurrency
-      const convertedAmount = from === displayCurrency 
-        ? amount 
+      const convertedAmount = from === displayCurrency
+        ? amount
         : convertCurrency(amount, from, displayCurrency, rates)
       return formatCurrency(convertedAmount, displayCurrency)
     },

@@ -65,15 +65,26 @@ interface Debt {
     description: string | null
     status: string
     payments: Payment[]
+    walletId: string | null
+    wallet: {
+        id: string
+        name: string
+        currency: string
+    } | null
     createdAt: string
     updatedAt: string
 }
 
 interface DebtClientProps {
     initialDebts: Debt[]
+    wallets: {
+        id: string
+        name: string
+        currency: string
+    }[]
 }
 
-export function DebtClient({ initialDebts }: DebtClientProps) {
+export function DebtClient({ initialDebts, wallets }: DebtClientProps) {
     const router = useRouter()
     const { displayCurrency } = useCurrency()
     const [showAddDebt, setShowAddDebt] = useState(false)
@@ -85,6 +96,7 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
         amount: number
         interest: number | null
         remaining: number
+        walletId: string | null
     } | null>(null)
     const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null; person: string }>({
         open: false,
@@ -182,6 +194,15 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
                                                         <Calendar className="w-3 h-3" />
                                                         {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString() : "No due date"}
                                                     </span>
+                                                    {debt.wallet && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span className="flex items-center gap-1">
+                                                                <CircleDollarSign className="w-3 h-3" />
+                                                                {debt.wallet.name}
+                                                            </span>
+                                                        </>
+                                                    )}
                                                     {debt.description && (
                                                         <>
                                                             <span>•</span>
@@ -287,7 +308,8 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
                                                 type: debt.type,
                                                 amount: debt.amount,
                                                 interest: debt.interest,
-                                                remaining: remaining
+                                                remaining: remaining,
+                                                walletId: debt.walletId
                                             })}
                                         >
                                             Record Payment
@@ -327,7 +349,7 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Lent Summary */}
                     <Card className="bg-neutral-900 border-neutral-800">
-                        <CardContent className="p-6">
+                        <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center">
                                     <TrendingUp className="w-6 h-6 text-green-500" />
@@ -357,7 +379,7 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
 
                     {/* Borrowed Summary */}
                     <Card className="bg-neutral-900 border-neutral-800">
-                        <CardContent className="p-6">
+                        <CardContent className="p-4 sm:p-6">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center">
                                     <TrendingDown className="w-6 h-6 text-red-500" />
@@ -453,6 +475,7 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
                 }}
                 onSuccess={() => router.refresh()}
                 editDebt={editingDebt}
+                wallets={wallets}
             />
 
             <AddPaymentDialog
@@ -460,6 +483,7 @@ export function DebtClient({ initialDebts }: DebtClientProps) {
                 onOpenChange={(open) => !open && setPayingDebt(null)}
                 onSuccess={() => router.refresh()}
                 debt={payingDebt}
+                wallets={wallets}
             />
 
             <ConfirmDialog

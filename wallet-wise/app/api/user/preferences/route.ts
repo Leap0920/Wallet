@@ -8,12 +8,12 @@ const VALID_CURRENCIES = CURRENCIES.map(c => c.code)
 export async function PATCH(request: NextRequest) {
     try {
         const session = await auth()
-        
+
         if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const { displayCurrency } = await request.json()
+        const { displayCurrency, categories } = await request.json()
 
         // Validate currency
         if (displayCurrency && !VALID_CURRENCIES.includes(displayCurrency)) {
@@ -23,41 +23,21 @@ export async function PATCH(request: NextRequest) {
             )
         }
 
-        // Update user's display currency preference
+        // Update user's preferences
         const updatedUser = await prisma.user.update({
             where: { id: session.user.id },
-            data: { displayCurrency },
-            select: { displayCurrency: true }
+            data: {
+                ...(displayCurrency && { displayCurrency }),
+                ...(categories && { categories })
+            },
+            select: { displayCurrency: true, categories: true }
         })
 
-        return NextResponse.json({ 
+        return NextResponse.json({
             message: "Preferences saved successfully",
-            displayCurrency: updatedUser.displayCurrency
+            displayCurrency: updatedUser.displayCurrency,
+            categories: updatedUser.categories
         })
-    } catch (error) {
-        console.error("Preferences update error:", error)
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        )
-    }
-}
-
-export async function POST(request: NextRequest) {
-    try {
-        const session = await auth()
-        
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-        }
-
-        const preferences = await request.json()
-
-        // In a real app, you might want to store preferences in a separate table
-        // For now, we'll just return success since this is a demo
-        console.log("User preferences updated:", preferences)
-
-        return NextResponse.json({ message: "Preferences saved successfully" })
     } catch (error) {
         console.error("Preferences update error:", error)
         return NextResponse.json(
@@ -70,7 +50,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
     try {
         const session = await auth()
-        
+
         if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
@@ -78,7 +58,7 @@ export async function GET() {
         // Fetch user's preferences from database
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
-            select: { displayCurrency: true }
+            select: { displayCurrency: true, categories: true }
         })
 
         const preferences = {
@@ -87,7 +67,8 @@ export async function GET() {
             weeklyReports: true,
             monthlyReports: true,
             darkMode: true,
-            displayCurrency: user?.displayCurrency || "PHP"
+            displayCurrency: user?.displayCurrency || "PHP",
+            categories: user?.categories || []
         }
 
         return NextResponse.json(preferences)

@@ -50,11 +50,43 @@ export async function DELETE(
 
     try {
         const { id: debtId } = await params
-        const debt = await prisma.debt.delete({
-            where: {
-                id: debtId,
-                userId: session.user.id
+
+        const debt = await prisma.$transaction(async (tx) => {
+            const existingDebt = await tx.debt.findUnique({
+                where: { id: debtId, userId: session.user.id },
+                include: { payments: true }
+            })
+
+            if (!existingDebt) throw new Error("Debt not found")
+
+            // 1. Reverse the initial debt effect on wallet
+            if (existingDebt.walletId) {
+                // If it was LENT, we deducted from wallet. To reverse, we add back.
+                // If it was BORROWED, we added to wallet. To reverse, we deduct.
+                const reversal = existingDebt.type === "LENT" ? existingDebt.amount : -existingDebt.amount
+                await tx.wallet.update({
+                    where: { id: existingDebt.walletId },
+                    data: { balance: { increment: reversal } }
+                })
             }
+
+            // 2. Reverse each payment's effect on its respective wallet
+            for (const payment of existingDebt.payments) {
+                if (payment.walletId) {
+                    // If debt was LENT, payment was receiving money (added to wallet). Reverse = deduct.
+                    // If debt was BORROWED, payment was giving money (deducted from wallet). Reverse = add back.
+                    const paymentReversal = existingDebt.type === "LENT" ? -payment.amount : payment.amount
+                    await tx.wallet.update({
+                        where: { id: payment.walletId },
+                        data: { balance: { increment: paymentReversal } }
+                    })
+                }
+            }
+
+            // 3. Delete the debt (payments will be deleted via cascade if set, but let's be safe)
+            return await tx.debt.delete({
+                where: { id: debtId }
+            })
         })
 
         return NextResponse.json(debt)

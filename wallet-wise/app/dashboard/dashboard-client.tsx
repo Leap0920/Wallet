@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Plus,
@@ -9,12 +9,14 @@ import {
   EyeOff,
   Settings,
   MoreVertical,
-  Trash2
+  Trash2,
+  Pencil
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AddTransactionDialog } from "@/components/dialogs/add-transaction-dialog"
+import { EditTransactionDialog } from "@/components/dialogs/edit-transaction-dialog"
 import { AddWalletDialog } from "@/components/dialogs/add-wallet-dialog"
 import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 import { ExpenseDonutChart } from "@/components/charts/expense-donut-chart"
@@ -41,6 +43,9 @@ interface Transaction {
   category: string | null
   date: Date
   transferFee?: number | null
+  walletId: string
+  fromWalletId?: string | null
+  toWalletId?: string | null
   wallet: {
     id: string
     name: string
@@ -107,9 +112,64 @@ export function DashboardClient({ data }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState<"accounts" | "records">("accounts")
   const [showBalance, setShowBalance] = useState(true)
   const [showAddTransaction, setShowAddTransaction] = useState(false)
+  const [showEditTransaction, setShowEditTransaction] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [showAddWallet, setShowAddWallet] = useState(false)
+  const [categories, setCategories] = useState<string[]>([])
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | "income" | "expense" | "transfer">("all")
+  const [period, setPeriod] = useState<"week" | "month" | "year">("month")
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const response = await fetch("/api/user/preferences")
+      if (response.ok) {
+        const data = await response.json()
+        setCategories(data.categories || [])
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  // Calculate filtered expenses based on period
+  const getFilteredExpenseData = useMemo(() => {
+    const now = new Date()
+    let startDate: Date
+
+    if (period === "week") {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    } else if (period === "month") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    } else {
+      startDate = new Date(now.getFullYear(), 0, 1)
+    }
+
+    const filteredTxs = data.transactions.filter(tx =>
+      tx.type === "expense" && new Date(tx.date) >= startDate
+    )
+
+    const categoryTotals: Record<string, number> = {}
+    let total = 0
+
+    filteredTxs.forEach(tx => {
+      const amount = convert(tx.amount, tx.wallet.currency, displayCurrency)
+      const cat = tx.category || "Others"
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + amount
+      total += amount
+    })
+
+    const chartData = Object.entries(categoryTotals).map(([name, value]) => ({
+      name,
+      value,
+      color: categoryConfig[name.toLowerCase()]?.color || categoryConfig.others.color
+    })).sort((a, b) => b.value - a.value)
+
+    return { chartData, total }
+  }, [period, data.transactions, convert, displayCurrency])
+
+  const { chartData, total: periodTotal } = getFilteredExpenseData
+
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean
     type: 'transaction' | 'wallet' | null
@@ -148,6 +208,11 @@ export function DashboardClient({ data }: DashboardClientProps) {
   const balanceChange = data.balanceTrend.length > 1
     ? ((convertedTotalBalance - data.balanceTrend[0].balance) / Math.abs(data.balanceTrend[0].balance || 1) * 100)
     : 0
+
+  const handleEditClick = (tx: Transaction) => {
+    setEditingTransaction(tx)
+    setShowEditTransaction(true)
+  }
 
   const handleDeleteClick = (type: 'transaction' | 'wallet', id: string, name: string) => {
     setDeleteConfirm({ open: true, type, id, name })
@@ -222,16 +287,16 @@ export function DashboardClient({ data }: DashboardClientProps) {
       </div>
 
       {/* Total Available Balance Section */}
-      <div className="px-1 py-2">
+      <div className="px-1 py-4">
         <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-1">Total Available Balance</p>
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-3xl font-bold text-white tracking-tight">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
             {showBalance ? formatCurrency(convertedTotalBalance, displayCurrency) : "••••••••"}
           </h2>
           {otherCurrencies.length > 0 && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {otherCurrencies.map(([curr, balance]) => (
-                <span key={curr} className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-md border border-neutral-700 font-bold uppercase">
+                <span key={curr} className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-md border border-neutral-700 font-bold uppercase whitespace-nowrap">
                   {curr} {showBalance ? formatNative(balance, curr) : "••••"}
                 </span>
               ))}
@@ -242,16 +307,16 @@ export function DashboardClient({ data }: DashboardClientProps) {
 
       {/* Tabs - Underline style from original design */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "accounts" | "records")}>
-        <TabsList className="bg-transparent border-b border-neutral-800 w-full justify-start rounded-none h-auto p-0 gap-8">
+        <TabsList className="bg-transparent border-b border-neutral-800 w-full justify-start rounded-none h-auto p-0 gap-4 sm:gap-8">
           <TabsTrigger
             value="accounts"
-            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-neutral-500 rounded-none px-0 pb-3 font-medium transition-none"
+            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-neutral-500 rounded-none px-0 pb-3 font-medium transition-none text-sm sm:text-base"
           >
             Accounts
           </TabsTrigger>
           <TabsTrigger
             value="records"
-            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-neutral-500 rounded-none px-0 pb-3 font-medium transition-none"
+            className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-white text-neutral-500 rounded-none px-0 pb-3 font-medium transition-none text-sm sm:text-base"
           >
             Records
           </TabsTrigger>
@@ -262,14 +327,14 @@ export function DashboardClient({ data }: DashboardClientProps) {
         <div className="space-y-4">
           {/* List of accounts Card */}
           <Card className="bg-neutral-900 border-neutral-800">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6 sm:pb-3">
               <CardTitle className="text-base font-medium text-white">List of accounts</CardTitle>
-              <Button variant="ghost" size="icon" className="text-neutral-500">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-500" onClick={() => router.push('/dashboard/settings')}>
                 <Settings className="w-5 h-5" />
               </Button>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
+            <CardContent className="p-4 sm:p-6 sm:pt-0">
+              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3">
                 {data.wallets.map((wallet, index) => (
                   <div
                     key={wallet.id}
@@ -310,32 +375,52 @@ export function DashboardClient({ data }: DashboardClientProps) {
 
           {/* Expenses Structure Card */}
           <Card className="bg-neutral-900 border-neutral-800">
-            <CardHeader className="flex flex-row items-start justify-between pb-2">
-              <div>
-                <CardTitle className="text-base font-medium text-white">Expenses structure</CardTitle>
-                <p className="text-[10px] text-neutral-500 mt-1 uppercase tracking-wider">LAST 30 DAYS</p>
+            <CardHeader className="flex flex-col space-y-4 pb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base font-medium text-white">Expenses structure</CardTitle>
+                </div>
+                <div className="flex bg-neutral-800 p-0.5 rounded-lg self-start sm:self-auto">
+                  {(['week', 'month', 'year'] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriod(p)}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${period === p
+                        ? 'bg-neutral-700 text-white shadow-sm'
+                        : 'text-neutral-500 hover:text-neutral-300'
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">vs past period</p>
-                <p className={`text-sm font-medium mt-1 ${expenseChange >= 0 ? 'text-red-400' : 'text-green-400'}`}>
-                  {expenseChange >= 0 ? '+' : ''}{expenseChange.toFixed(0)}%
+              <div className="flex justify-between items-end">
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
+                  {period === 'week' ? 'Past 7 days' : period === 'month' ? 'This month' : 'This year'}
                 </p>
+                <div className="text-right">
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider">vs past period</p>
+                  <p className={`text-sm font-medium mt-1 ${expenseChange >= 0 ? 'text-red-400' : 'text-green-400'}`}>
+                    {expenseChange >= 0 ? '+' : ''}{expenseChange.toFixed(0)}%
+                  </p>
+                </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 sm:pt-0">
               <p className="text-2xl font-semibold text-white mb-6">
-                {showBalance ? formatAmount(data.monthlyExpenses) : "••••••"}
+                {showBalance ? formatCurrency(periodTotal, displayCurrency) : "••••••"}
               </p>
-              {data.categoryData.length > 0 ? (
+              {chartData.length > 0 ? (
                 <ExpenseDonutChart
-                  data={data.categoryData}
-                  total={data.monthlyExpenses}
+                  data={chartData}
+                  total={periodTotal}
                   showBalance={showBalance}
                   displayCurrency={displayCurrency}
                 />
               ) : (
                 <div className="text-center py-12 text-neutral-500 text-sm">
-                  No expenses this month
+                  No expenses for this {period}
                 </div>
               )}
             </CardContent>
@@ -343,7 +428,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
 
           {/* Balance Trend Card */}
           <Card className="bg-neutral-900 border-neutral-800">
-            <CardHeader className="flex flex-row items-start justify-between pb-2">
+            <CardHeader className="flex flex-row items-start justify-between p-4 sm:p-6 sm:pb-2">
               <div>
                 <CardTitle className="text-base font-medium text-white">Balance Trend</CardTitle>
                 <p className="text-[10px] text-neutral-500 mt-1 uppercase tracking-wider">TODAY</p>
@@ -355,7 +440,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
                 </p>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 sm:pt-0">
               <div className="h-48">
                 <BalanceTrendChart data={data.balanceTrend} showBalance={showBalance} displayCurrency={displayCurrency} />
               </div>
@@ -364,7 +449,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
 
           {/* Last records overview Card */}
           <Card className="bg-neutral-900 border-neutral-800">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6 sm:pb-2">
               <div>
                 <CardTitle className="text-base font-medium text-white">Last records overview</CardTitle>
                 <p className="text-[10px] text-neutral-500 mt-1 uppercase tracking-wider">LAST 30 DAYS</p>
@@ -373,29 +458,29 @@ export function DashboardClient({ data }: DashboardClientProps) {
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </CardHeader>
-            <CardContent className="space-y-4 pt-2">
+            <CardContent className="space-y-4 p-4 sm:p-6 sm:pt-2">
               {data.transactions.slice(0, 5).map((tx) => {
                 const style = getCategoryStyle(tx.category, tx.type)
                 return (
-                  <div key={tx.id} className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${style.bgColor}/20 text-white relative`}>
-                      <span className="text-lg">{style.icon}</span>
+                  <div key={tx.id} className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${style.bgColor}/20 text-white relative shrink-0`}>
+                        <span className="text-lg">{style.icon}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white capitalize leading-none mb-1 truncate">
+                          {tx.type === 'income'
+                            ? 'Income'
+                            : tx.type === 'transfer'
+                              ? `Transfer`
+                              : tx.category || 'Expense'}
+                        </p>
+                        <p className="text-[10px] text-neutral-500 font-medium truncate">
+                          {tx.wallet.name}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white capitalize leading-none mb-1">
-                        {tx.type === 'income'
-                          ? 'Income'
-                          : tx.type === 'transfer'
-                            ? `Transfer to ${tx.toWallet?.name || 'Unknown'}`
-                            : tx.category || 'Expense'}
-                      </p>
-                      <p className="text-[10px] text-neutral-500 font-medium">
-                        {tx.type === 'transfer'
-                          ? `From ${tx.fromWallet?.name || 'Unknown'}`
-                          : tx.wallet.name}
-                      </p>
-                    </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <p className={`text-sm font-semibold tracking-tight ${tx.type === 'income' ? 'text-green-400' :
                         tx.type === 'transfer' ? 'text-blue-400' : 'text-red-400'
                         }`}>
@@ -455,7 +540,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
               variant={filter === "transfer" ? "default" : "outline"}
               size="sm"
               className={`rounded-lg px-4 h-8 text-xs font-medium ${filter === "transfer" ? "bg-neutral-800 text-white border-none" : "border-neutral-800 text-neutral-400"}`}
-              onClick={() => setFilter("transfer" as any)}
+              onClick={() => setFilter("transfer")}
             >
               Transfers
             </Button>
@@ -473,7 +558,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
                         return (
                           <div key={tx.id} className="flex items-center gap-4 p-4 hover:bg-white/[0.01] transition-colors">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${style.bgColor}/10 text-white`}>
-                              <span className="text-xl">{style.icon}</span>
+                              <span className="text-lg">{style.icon}</span>
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-white capitalize leading-none mb-1">
@@ -489,26 +574,36 @@ export function DashboardClient({ data }: DashboardClientProps) {
                                   : tx.wallet.name}
                               </p>
                               {tx.description && (
-                                <p className="text-[10px] text-neutral-600 mt-1 font-medium italic">"{tx.description}"</p>
+                                <p className="text-[10px] text-neutral-600 mt-1 font-medium italic truncate max-w-[150px] sm:max-w-none">"{tx.description}"</p>
                               )}
                             </div>
-                            <div className="flex items-center gap-3">
-                              <div className="text-right">
+                            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3">
+                              <div className="text-right whitespace-nowrap">
                                 <p className={`text-sm font-semibold tracking-tight ${tx.type === 'income' ? 'text-green-400' :
                                   tx.type === 'transfer' ? 'text-blue-400' : 'text-red-400'
                                   }`}>
                                   {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '→' : '-'}{formatNative(tx.amount, tx.wallet.currency)}
                                 </p>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-neutral-700 hover:text-red-400 hover:bg-red-400/10 rounded-lg"
-                                onClick={() => handleDeleteClick('transaction', tx.id, tx.description || tx.category || 'Transaction')}
-                                disabled={deletingId === tx.id}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 sm:h-8 sm:w-8 text-neutral-700 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg"
+                                  onClick={() => handleEditClick(tx)}
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 sm:h-8 sm:w-8 text-neutral-700 hover:text-red-400 hover:bg-red-400/10 rounded-lg"
+                                  onClick={() => handleDeleteClick('transaction', tx.id, tx.description || tx.category || 'Transaction')}
+                                  disabled={deletingId === tx.id}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         )
@@ -541,8 +636,19 @@ export function DashboardClient({ data }: DashboardClientProps) {
         open={showAddTransaction}
         onOpenChange={setShowAddTransaction}
         wallets={data.wallets}
+        categories={categories}
         onSuccess={() => router.refresh()}
       />
+
+      <EditTransactionDialog
+        open={showEditTransaction}
+        onOpenChange={setShowEditTransaction}
+        wallets={data.wallets}
+        categories={categories}
+        transaction={editingTransaction}
+        onSuccess={() => router.refresh()}
+      />
+
       <AddWalletDialog
         open={showAddWallet}
         onOpenChange={setShowAddWallet}

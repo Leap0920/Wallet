@@ -23,6 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             email: true,
                             name: true,
                             password: true,
+                            displayCurrency: true,
                         }
                     })
 
@@ -43,6 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         id: user.id,
                         email: user.email,
                         name: user.name,
+                        displayCurrency: user.displayCurrency,
                     }
                 } catch (error) {
                     console.error("Auth error:", error)
@@ -63,12 +65,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id
+                token.displayCurrency = (user as any).displayCurrency
             }
             return token
         },
         async session({ session, token }) {
             if (session.user) {
                 session.user.id = token.id as string
+                (session.user as any).displayCurrency = token.displayCurrency as string
             }
             return session
         }

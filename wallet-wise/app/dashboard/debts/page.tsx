@@ -10,17 +10,25 @@ export const metadata = {
 export default async function DebtPage() {
     const session = await auth()
 
-    const debts = await prisma.debt.findMany({
-        where: {
-            userId: session?.user?.id
-        },
-        include: {
-            payments: true
-        },
-        orderBy: {
-            createdAt: 'desc'
-        }
-    })
+    const [debts, wallets] = await Promise.all([
+        prisma.debt.findMany({
+            where: {
+                userId: session?.user?.id
+            },
+            include: {
+                payments: true,
+                wallet: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        }),
+        prisma.wallet.findMany({
+            where: {
+                userId: session?.user?.id
+            }
+        })
+    ])
 
     // Format debts for the client component
     const formattedDebts = debts.map((debt: any) => ({
@@ -43,7 +51,7 @@ export default async function DebtPage() {
                 <p className="text-neutral-400">Track your pinautang and utang in one place.</p>
             </div>
 
-            <DebtClient initialDebts={formattedDebts as any} />
+            <DebtClient initialDebts={formattedDebts as any} wallets={wallets as any} />
         </div>
     )
 }

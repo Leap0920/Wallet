@@ -25,9 +25,14 @@ interface AddDebtDialogProps {
     onOpenChange: (open: boolean) => void
     onSuccess: () => void
     editDebt?: any | null
+    wallets: {
+        id: string
+        name: string
+        currency: string
+    }[]
 }
 
-export function AddDebtDialog({ open, onOpenChange, onSuccess, editDebt = null }: AddDebtDialogProps) {
+export function AddDebtDialog({ open, onOpenChange, onSuccess, editDebt = null, wallets }: AddDebtDialogProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [formData, setFormData] = useState({
         type: "LENT",
@@ -35,7 +40,8 @@ export function AddDebtDialog({ open, onOpenChange, onSuccess, editDebt = null }
         amount: "",
         interest: "",
         dueDate: "",
-        description: ""
+        description: "",
+        walletId: ""
     })
 
     useEffect(() => {
@@ -46,7 +52,8 @@ export function AddDebtDialog({ open, onOpenChange, onSuccess, editDebt = null }
                 amount: editDebt.amount.toString(),
                 interest: editDebt.interest?.toString() || "",
                 dueDate: editDebt.dueDate ? editDebt.dueDate.split('T')[0] : "",
-                description: editDebt.description || ""
+                description: editDebt.description || "",
+                walletId: editDebt.walletId || ""
             })
         } else {
             setFormData({
@@ -55,7 +62,8 @@ export function AddDebtDialog({ open, onOpenChange, onSuccess, editDebt = null }
                 amount: "",
                 interest: "",
                 dueDate: "",
-                description: ""
+                description: "",
+                walletId: ""
             })
         }
     }, [editDebt, open])
@@ -88,6 +96,7 @@ export function AddDebtDialog({ open, onOpenChange, onSuccess, editDebt = null }
                     amount: parseFloat(formData.amount),
                     interest: formData.interest ? parseFloat(formData.interest) : null,
                     dueDate: formData.dueDate ? new Date(formData.dueDate) : null,
+                    walletId: formData.walletId === "NO_WALLET" ? null : formData.walletId
                 })
             })
 
@@ -124,6 +133,31 @@ export function AddDebtDialog({ open, onOpenChange, onSuccess, editDebt = null }
                                 <SelectItem value="BORROWED">Utang (Borrowed)</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-neutral-400">Wallet (Optional - will affect balance)</Label>
+                        <Select
+                            value={formData.walletId || "NO_WALLET"}
+                            onValueChange={(value) => setFormData({ ...formData, walletId: value })}
+                        >
+                            <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white">
+                                <SelectValue placeholder="Select wallet" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-neutral-900 border-neutral-800 text-white">
+                                <SelectItem value="NO_WALLET">No Wallet</SelectItem>
+                                {wallets.map((wallet) => (
+                                    <SelectItem key={wallet.id} value={wallet.id}>
+                                        {wallet.name} ({wallet.currency})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-[10px] text-neutral-500">
+                            {formData.type === "LENT"
+                                ? "Lending will deduct from the selected wallet."
+                                : "Borrowing will add to the selected wallet."}
+                        </p>
                     </div>
 
                     <div className="space-y-2">

@@ -14,50 +14,67 @@ export async function POST(
     try {
         const { id: debtId } = await params
         const body = await req.json()
-        const { amount, date, note } = body
+        const { amount, date, note, walletId } = body
 
         if (!amount) {
             return new NextResponse("Missing amount", { status: 400 })
         }
 
-        // Check if debt exists and belongs to user
-        const debt = await prisma.debt.findUnique({
-            where: {
-                id: debtId,
-                userId: session.user.id
-            },
-            include: {
-                payments: true
+        const numericAmount = parseFloat(amount)
+
+        const payment = await prisma.$transaction(async (tx) => {
+            // Check if debt exists and belongs to user
+            const debt = await tx.debt.findUnique({
+                where: {
+                    id: debtId,
+                    userId: session.user.id
+                },
+                include: {
+                    payments: true
+                }
+            })
+
+            if (!debt) {
+                throw new Error("Debt not found")
             }
-        })
 
-        if (!debt) {
-            return new NextResponse("Debt not found", { status: 404 })
-        }
+            const newPayment = await tx.debtPayment.create({
+                data: {
+                    amount: numericAmount,
+                    date: date ? new Date(date) : new Date(),
+                    note,
+                    debtId,
+                    walletId: walletId || null
+                }
+            })
 
-        const payment = await prisma.debtPayment.create({
-            data: {
-                amount: parseFloat(amount),
-                date: date ? new Date(date) : new Date(),
-                note,
-                debtId
+            if (walletId) {
+                // If LENT, receiving a payment means we get money back
+                // If BORROWED, making a payment means we lose money
+                const balanceChange = debt.type === "LENT" ? numericAmount : -numericAmount
+                await tx.wallet.update({
+                    where: { id: walletId },
+                    data: { balance: { increment: balanceChange } }
+                })
             }
-        })
 
-        // Update debt status
-        const totalPaid = debt.payments.reduce((acc: number, p: any) => acc + p.amount, 0) + parseFloat(amount)
-        const totalToPay = debt.amount + (debt.interest || 0)
+            // Update debt status
+            const totalPaid = debt.payments.reduce((acc: number, p: any) => acc + p.amount, 0) + numericAmount
+            const totalToPay = debt.amount + (debt.interest || 0)
 
-        let status = "PENDING"
-        if (totalPaid >= totalToPay) {
-            status = "PAID"
-        } else if (totalPaid > 0) {
-            status = "PARTIAL"
-        }
+            let status = "PENDING"
+            if (totalPaid >= totalToPay) {
+                status = "PAID"
+            } else if (totalPaid > 0) {
+                status = "PARTIAL"
+            }
 
-        await prisma.debt.update({
-            where: { id: debtId },
-            data: { status }
+            await tx.debt.update({
+                where: { id: debtId },
+                data: { status }
+            })
+
+            return newPayment
         })
 
         return NextResponse.json(payment)

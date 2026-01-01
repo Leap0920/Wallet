@@ -119,7 +119,7 @@ export function IponClient({ goals }: IponClientProps) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
         <Card className="bg-neutral-900 border-neutral-800">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
