@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client"
 
 export async function PATCH(
     req: Request,
@@ -51,7 +52,7 @@ export async function DELETE(
     try {
         const { id: debtId } = await params
 
-        const debt = await prisma.$transaction(async (tx) => {
+        const debt = await prisma.$transaction(async (tx: PrismaClient) => {
             const existingDebt = await tx.debt.findUnique({
                 where: { id: debtId, userId: session.user.id },
                 include: { payments: true }
