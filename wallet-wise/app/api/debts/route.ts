@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client"
 
 export async function GET() {
     const session = await auth()
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
 
         const numericAmount = parseFloat(amount)
 
-        const debt = await prisma.$transaction(async (tx) => {
+        const debt = await prisma.$transaction(async (tx: PrismaClient) => {
             const newDebt = await tx.debt.create({
                 data: {
                     type,
