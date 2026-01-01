@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client"
 
 export async function POST(
     req: Request,
@@ -26,7 +27,7 @@ export async function POST(
 
         const numericAmount = parseFloat(amount)
 
-        const payment = await prisma.$transaction(async (tx) => {
+        const payment = await prisma.$transaction(async (tx: PrismaClient) => {
             // Check if debt exists and belongs to user
             const debt = await tx.debt.findUnique({
                 where: {
