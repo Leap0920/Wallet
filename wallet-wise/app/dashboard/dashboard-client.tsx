@@ -334,7 +334,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
               </Button>
             </CardHeader>
             <CardContent className="p-4 sm:p-6 sm:pt-0">
-              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
                 {data.wallets.map((wallet, index) => (
                   <div
                     key={wallet.id}
