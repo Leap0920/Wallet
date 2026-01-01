@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client"
 
 export async function PATCH(
     req: Request,
@@ -22,7 +23,7 @@ export async function PATCH(
 
         const numericAmount = parseFloat(amount)
 
-        const updatedPayment = await prisma.$transaction(async (tx) => {
+        const updatedPayment = await prisma.$transaction(async (tx: PrismaClient) => {
             // Find existing payment and debt
             const oldPayment = await tx.debtPayment.findUnique({
                 where: { id: paymentId },
@@ -100,7 +101,7 @@ export async function DELETE(
     try {
         const { id: debtId, paymentId } = await params
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: PrismaClient) => {
             const payment = await tx.debtPayment.findUnique({
                 where: { id: paymentId },
                 include: { debt: true }
