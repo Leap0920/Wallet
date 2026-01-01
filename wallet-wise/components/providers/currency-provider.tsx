@@ -28,7 +28,7 @@ export function CurrencyProvider({ children, initialDisplayCurrency = "PHP" }: C
 
   // Sync displayCurrency with session preference
   useEffect(() => {
-    if ((session?.user as any)?.displayCurrency) {
+    if (session?.user && (session.user as any).displayCurrency) {
       setDisplayCurrency((session.user as any).displayCurrency)
     }
   }, [session])
