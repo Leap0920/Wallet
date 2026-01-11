@@ -15,6 +15,7 @@ A comprehensive debt management system that allows you to:
 - Set specific savings goals with target amounts and dates.
 - **Smart Denominations:** Automatically generates a bill breakdown (₱1000, ₱500, etc.) to make reaching your goal easier.
 - Interactive checklist to track physical cash savings.
+- 
 
 ### 🌍 Multi-Currency Support
 - Support for 50+ world currencies including PHP, USD, EUR, etc.
