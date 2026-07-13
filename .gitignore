@@ -1,2 +1,15 @@
 # Local Netlify folder
 .netlify
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+
+# Environment
+.env
+.env*.local
+
+# Vercel
+.vercel
